@@ -2,8 +2,8 @@ name: Mettre a jour les votes
 
 on:
   schedule:
-    - cron: '0 0 * * *' # S'exécute chaque jour à minuit
-  workflow_dispatch: # Permet de lancer la mise à jour manuellement si besoin
+    - cron: '0 0 * * *'
+  workflow_dispatch:
 
 jobs:
   update-data:
@@ -15,7 +15,7 @@ jobs:
       - name: Configurer Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.12'
 
       - name: Télécharger les nouveaux votes
         run: python scripts/fetch_votes.py
