@@ -5,6 +5,10 @@ on:
     - cron: '0 0 * * *'
   workflow_dispatch:
 
+# Permission explicite d'écrire dans le dépôt
+permissions:
+  contents: write
+
 jobs:
   update-data:
     runs-on: ubuntu-latest
