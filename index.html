@@ -1,348 +1,480 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Député d'un Jour - Votre Alignement Politique</title>
-    <style>
-        :root {
-            /* Colors: Official-inspired, modern palette */
-            --bg: #F0F4F8;
-            --card-bg: #FFFFFF;
-            --text-main: #1A1A1A;
-            --text-secondary: #4B5563;
-            --primary: #1D4ED8; /* blue-700 */
-            --primary-hover: #1E40AF;
-            --pour: #10B981; /* emerald-500 */
-            --pour-bg: #D1FAE5;
-            --contre: #EF4444; /* rose-500 */
-            --contre-bg: #FEE2E2;
-            --abst: #6B7280; /* slate-500 */
-            --abst-bg: #F3F4F6;
-            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-            --border: #E5E7EB;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Député d'un Jour - Alignement Politique Parlementaire</title>
+  <style>
+    :root {
+      --bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --primary: #2563EB;
+      --primary-hover: #1D4ED8;
+      --pour: #16A34A;
+      --pour-bg: #DCFCE7;
+      --contre: #DC2626;
+      --contre-bg: #FEE2E2;
+      --abst: #475569;
+      --abst-bg: #F1F5F9;
+      --border: #E2E8F0;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    }
 
-        body {
-            font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-            background-color: var(--bg);
-            color: var(--text-main);
-            margin: 0;
-            padding: 2rem 1rem;
-            display: flex;
-            justify-content: center;
-        }
+    * { box-sizing: border-box; }
 
-        .container {
-            max-width: 900px;
-            width: 100%;
-            display: grid;
-            gap: 2rem;
-            grid-template-columns: 1fr 280px; /* main + sidebar */
-        }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      margin: 0;
+      padding: 1.5rem 1rem 3rem 1rem;
+      line-height: 1.5;
+    }
 
-        @media (max-width: 768px) {
-            .container { grid-template-columns: 1fr; }
-        }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
 
-        /* --- Global Elements --- */
-        .card {
-            background-color: var(--card-bg);
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
+    /* En-tête */
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    header h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin: 0 0 0.5rem 0;
+    }
+    header p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      margin: 0;
+    }
 
-        .card:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15); }
+    /* Grille principale */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 1.5rem;
+    }
 
-        h1, h2, h3 { margin-top: 0; }
-        h1 { font-size: 2.25rem; color: var(--primary); font-weight: 800; display: flex; align-items: center; gap: 0.5rem; }
-        h2 { font-size: 1.5rem; margin-bottom: 0.5rem; }
-        h3 { font-size: 1.2rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 1.5rem; }
+    @media (max-width: 850px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
 
-        .tag { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: bold; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
-        .tag.pour { background-color: var(--pour-bg); color: #065F46; } /* green-800 */
-        .tag.contre { background-color: var(--contre-bg); color: #991B1B; } /* red-800 */
-        .tag.abstention { background-color: var(--abst-bg); color: #374151; } /* gray-700 */
+    .card {
+      background: var(--card-bg);
+      border-radius: 1rem;
+      padding: 1.75rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
 
-        .icon { width: 1.2em; height: 1.2em; fill: currentColor; vertical-align: text-bottom; margin-right: 0.25rem; }
+    .meta-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
 
-        /* --- Header Section --- */
-        .page-header { grid-column: 1 / -1; text-align: center; margin-bottom: 1rem; }
-        .page-header p { color: var(--text-secondary); max-width: 600px; margin: 0 auto; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-type { background-color: #EFF6FF; color: var(--primary); }
+    .badge-pour { background-color: var(--pour-bg); color: #14532D; }
+    .badge-contre { background-color: var(--contre-bg); color: #7F1D1D; }
+    .badge-abst { background-color: var(--abst-bg); color: #1E293B; }
 
-        /* --- Main Vote Card --- */
-        #game-card .context-bar {
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem;
-            color: var(--text-secondary); font-size: 0.9rem;
-        }
-        #game-card #vote-title { margin-bottom: 1.5rem; font-weight: 700; color: #000; }
-        #game-card .text-link-btn {
-            display: inline-flex; align-items: center; gap: 0.5rem;
-            background: none; border: 2px solid var(--border); color: var(--primary);
-            font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.75rem;
-            text-decoration: none; transition: all 0.2s ease;
-        }
-        #game-card .text-link-btn:hover { background-color: var(--primary); color: white; border-color: var(--primary); }
+    .vote-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 0 0 1.25rem 0;
+      line-height: 1.4;
+    }
 
-        #game-card .vote-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 2rem; }
-        #game-card .vote-btn {
-            padding: 1rem; border: none; border-radius: 0.75rem; font-weight: bold; font-size: 1.1rem;
-            cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
-            transition: all 0.2s ease; color: white; text-align: center;
-        }
-        #game-card .vote-btn .icon { width: 2em; height: 2em; margin: 0; }
-        #game-card .btn-pour { background-color: var(--pour); box-shadow: 0 4px 0 #047857; }
-        #game-card .btn-contre { background-color: var(--contre); box-shadow: 0 4px 0 #BE123C; }
-        #game-card .btn-abst { background-color: var(--abst); box-shadow: 0 4px 0 #4B5563; }
-        #game-card .vote-btn:hover { transform: translateY(2px); box-shadow: 0 2px 0 currentColor; opacity: 0.9; }
+    .link-official {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.925rem;
+      margin-bottom: 1.75rem;
+    }
+    .link-official:hover { text-decoration: underline; }
 
-        /* --- Results Card --- */
-        #result-card .comparison-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
-        #result-card #breakdown { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
-        #result-card .group-result-card {
-            border: 1px solid var(--border); padding: 1.25rem; border-radius: 0.75rem;
-            display: grid; grid-template-columns: 48px 1fr 32px; align-items: center; gap: 1rem;
-        }
-        #result-card .group-result-card .party-logo { width: 48px; height: 48px; border-radius: 50%; background: #F3F4F6; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; color: #000; border: 2px solid #E5E7EB; }
-        #result-card .group-result-card .party-info { display: flex; flex-direction: column; gap: 0.25rem; }
-        #result-card .group-result-card .party-name { font-weight: 600; color: #000; }
-        #result-card .group-result-card .agreement-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
-        #result-card .group-result-card .agreement-icon.yes { background-color: var(--pour); }
-        #result-card .group-result-card .agreement-icon.no { background-color: var(--contre); }
+    /* Actions de vote */
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
 
-        #result-card .next-btn { display: inline-flex; align-items: center; gap: 0.5rem; background-color: var(--primary); color: white; border: none; font-weight: bold; padding: 1rem 2rem; border-radius: 0.75rem; cursor: pointer; transition: background-color 0.2s; margin-top: 2rem; }
-        #result-card .next-btn:hover { background-color: var(--primary-hover); }
+    @media (max-width: 500px) {
+      .actions-grid { grid-template-columns: 1fr; }
+    }
 
-        /* --- Overall Alignment Sidebar --- */
-        .alignment-sidebar h2 { color: var(--primary); text-align: center; margin-bottom: 1.5rem; }
-        .alignment-sidebar #scores-container { display: flex; flex-direction: column; gap: 1rem; }
-        .alignment-sidebar .no-votes { color: var(--text-secondary); text-align: center; padding: 1rem; }
-        .alignment-sidebar .overall-score-card {
-            border: 1px solid var(--border); padding: 1rem; border-radius: 0.75rem;
-            display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;
-        }
-        .alignment-sidebar .overall-score-card:hover { border-color: var(--primary); background-color: #EFF6FF; }
-        .alignment-sidebar .overall-score-card .group-name { font-weight: 600; color: #000; flex: 1; margin-right: 1rem; }
-        .alignment-sidebar .overall-score-card .percentage-display { display: flex; flex-direction: column; align-items: flex-end; }
-        .alignment-sidebar .overall-score-card .pct-num { font-size: 1.75rem; font-weight: 800; color: var(--primary); line-height: 1; }
-        .alignment-sidebar .overall-score-card .pct-text { font-size: 0.8rem; color: var(--text-secondary); }
-    </style>
+    .btn-vote {
+      border: none;
+      border-radius: 0.75rem;
+      padding: 1.1rem 0.75rem;
+      font-size: 1.1rem;
+      font-weight: 800;
+      cursor: pointer;
+      color: white;
+      transition: transform 0.1s;
+    }
+    .btn-vote:hover { transform: translateY(-2px); }
+
+    .btn-pour { background-color: var(--pour); }
+    .btn-contre { background-color: var(--contre); }
+    .btn-abst { background-color: var(--abst); }
+
+    /* Résultat immédiat & Bouton Suivant */
+    .result-banner {
+      background: #F8FAFC;
+      border: 2px solid var(--border);
+      border-radius: 0.85rem;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .btn-next {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.85rem 1.6rem;
+      border-radius: 0.65rem;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+    .btn-next:hover { background-color: var(--primary-hover); }
+
+    /* Ventilation des Partis */
+    .parties-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.85rem;
+      margin-top: 1rem;
+    }
+
+    .party-card {
+      border: 1px solid var(--border);
+      border-radius: 0.65rem;
+      padding: 0.85rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: white;
+    }
+
+    .party-info { display: flex; align-items: center; gap: 0.65rem; }
+
+    .party-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.8rem;
+      color: white;
+    }
+
+    .summary-box { display: flex; flex-direction: column; gap: 0.75rem; }
+    .summary-stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.65rem 0.85rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    /* Profil Global */
+    .profile-section { margin-top: 2rem; }
+    .scores-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .score-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .score-header { display: flex; justify-content: space-between; align-items: center; }
+    .score-party-name { font-weight: 700; }
+    .score-pct { font-size: 1.3rem; font-weight: 800; }
+
+    .progress-bar-bg {
+      height: 8px;
+      background: #E2E8F0;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-bar-fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+  </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- Page Header (centered top) -->
-    <header class="page-header">
-        <h1>🏛️ Député d'un Jour</h1>
-        <p>Découvrez votre alignement politique en votant sur les textes officiels de l'Assemblée nationale.</p>
-    </header>
+  <header>
+    <h1>🏛️ Député d'un Jour</h1>
+    <p>Votez sur les lois réelles de l'Assemblée nationale et découvrez votre affinité politique.</p>
+  </header>
 
-    <!-- Main Game Section (on the left) -->
-    <div style="grid-column: 1 / span 1;">
-        <!-- Current Vote Card -->
-        <div id="game-card" class="card">
-            <div class="context-bar">
-                <span id="vote-date">Scrutin n°...</span>
-                <span class="tag abstention">En Attente</span>
-            </div>
-            <h2 id="vote-title">Chargement des données de l'Assemblée nationale...</h2>
-            <p>Veuillez lire le texte avant de voter.</p>
-            <a id="vote-url" href="#" target="_blank" class="text-link-btn">
-                📄 Lire le texte complet sur Assemblée-Nationale.fr ➔
-            </a>
-            <div class="vote-actions">
-                <button class="vote-btn btn-pour" onclick="submitVote('POUR')">
-                    <svg class="icon" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/></svg>
-                    POUR
-                </button>
-                <button class="vote-btn btn-contre" onclick="submitVote('CONTRE')">
-                    <svg class="icon" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"/></svg>
-                    CONTRE
-                </button>
-                <button class="vote-btn btn-abst" onclick="submitVote('ABSTENTION')">
-                    <svg class="icon" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z"/></svg>
-                    ABSTENTION
-                </button>
-            </div>
+  <div class="main-grid">
+    <main>
+      <div id="game-card" class="card">
+        <div class="meta-bar">
+          <span id="vote-number" style="font-weight:600; color:var(--text-muted); font-size:0.9rem;">Scrutin n°...</span>
+          <span id="vote-type-badge" class="badge badge-type">Projet de loi</span>
         </div>
 
-        <!-- Result Breakdown Card (hidden initially) -->
-        <div id="result-card" class="card" style="display:none; margin-top: 2rem;">
-            <div class="comparison-header">
-                <h3>Comparez votre vote aux groupes politiques</h3>
-                <span id="user-choice-tag" class="tag">Votre choix</span>
-            </div>
-            <p>Voici comment les principaux groupes politiques ont majoritairement voté sur ce texte :</p>
-            <div id="breakdown">
-                <!-- Group result cards will be dynamic -->
-            </div>
-            <button class="next-btn" onclick="nextVote()">
-                Vote Suivant ➔
-            </button>
-        </div>
-    </div>
+        <h2 id="vote-title" class="vote-title">Chargement des données...</h2>
 
-    <!-- Overall Profile Sidebar (on the right) -->
-    <aside class="alignment-sidebar card">
-        <h2>Mon Profil Politique</h2>
-        <p class="small no-votes" style="font-size:0.85em; margin-bottom: 1.5rem;">Calcule votre accord global avec chaque groupe, basé sur tous vos votes enregistrés localement dans votre navigateur.</p>
-        <div id="scores-container">
-            <div class="no-votes">Aucun vote enregistré pour l'instant.</div>
+        <a id="vote-url" href="#" target="_blank" class="link-official">
+          📄 Consulter le détail du texte sur Assemblee-Nationale.fr ↗
+        </a>
+
+        <!-- Boutons de Vote -->
+        <div id="vote-actions" class="actions-grid">
+          <button class="btn-vote btn-pour" onclick="submitVote('POUR')">👍 POUR</button>
+          <button class="btn-vote btn-contre" onclick="submitVote('CONTRE')">👎 CONTRE</button>
+          <button class="btn-vote btn-abst" onclick="submitVote('ABSTENTION')">✋ ABSTENTION</button>
         </div>
+
+        <!-- Zone de Résultat & Bouton Suivant Placé ici -->
+        <div id="result-zone" style="display: none; margin-top: 1.5rem;">
+          <div class="result-banner">
+            <div>
+              <span style="font-size: 0.85rem; color: var(--text-muted); display: block;">Votre vote :</span>
+              <span id="user-vote-badge" class="badge">POUR</span>
+            </div>
+            <button class="btn-next" onclick="nextVote()">Vote suivant ➔</button>
+          </div>
+
+          <h3 style="font-size: 1.05rem; margin-bottom: 0.75rem;">Position des groupes politiques :</h3>
+          <div id="parties-breakdown" class="parties-grid"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Sidebar de Synthèse -->
+    <aside>
+      <div class="card">
+        <h3 style="font-size: 1.1rem; margin-top: 0; margin-bottom: 1rem;">Synthèse du vote</h3>
+        <div id="summary-box" class="summary-box">
+          <p style="font-size: 0.875rem; color: var(--text-muted); margin: 0;">Votez pour afficher la synthèse des partis.</p>
+        </div>
+      </div>
     </aside>
+  </div>
+
+  <!-- Alignement Politique Global en bas -->
+  <section class="profile-section">
+    <div class="card">
+      <h2 style="font-size: 1.3rem; margin: 0 0 0.5rem 0;">📊 Votre Alignement Politique Global</h2>
+      <p style="color: var(--text-muted); margin: 0 0 1rem 0; font-size: 0.9rem;">
+        Calculé à partir de l'ensemble de vos choix dans cette session.
+      </p>
+      <div id="global-scores" class="scores-grid">
+        <p style="color: var(--text-muted); font-style: italic;">Aucun vote enregistré pour le moment.</p>
+      </div>
+    </div>
+  </section>
 </div>
 
 <script>
-    // Constants & Global State
-    let votesData = [];
-    let currentIndex = 0;
+  let votesData = [];
+  let currentIndex = 0;
 
-    // Dictionary for French party initials and maybe color codes or placeholder data
-    const GROUP_CONFIG = {
-        "PO845407": { name: "Rassemblement National", initial: "RN", color: "#0000BA" },
-        "PO845413": { name: "La France Insoumise", initial: "LFI", color: "#CC0000" },
-        "PO845401": { name: "Ensemble", initial: "ENS", color: "#FFD700" }, // RE
-        "PO845454": { name: "Socialistes et app.", initial: "SOC", color: "#ED0076" },
-        "PO845470": { name: "Droite Républicaine", initial: "DR", color: "#005EB8" },
-        "PO845485": { name: "Écologiste et Social", initial: "ECO", color: "#00B050" },
-        "PO845420": { name: "Les Démocrates", initial: "DEM", color: "#FF8C00" },
-        "PO845439": { name: "Horizons", initial: "HOR", color: "#00CED1" }
-    };
+  const GROUP_CONFIG = {
+    "PO845407": { name: "Rassemblement National", short: "RN", color: "#0000BA" },
+    "PO845413": { name: "La France Insoumise", short: "LFI", color: "#CC0000" },
+    "PO845401": { name: "Ensemble pour la République", short: "EPR", color: "#FFD700" },
+    "PO845454": { name: "Socialistes et apparentés", short: "SOC", color: "#ED0076" },
+    "PO845470": { name: "Droite Républicaine", short: "DR", color: "#005EB8" },
+    "PO845485": { name: "Écologiste et Social", short: "ECO", color: "#00B050" },
+    "PO845420": { name: "Les Démocrates", short: "DEM", color: "#FF8C00" },
+    "PO845439": { name: "Horizons", short: "HOR", color: "#00CED1" }
+  };
 
-    // Main initialization
-    async function init() {
-        try {
-            // In GitHub Pages, data is fetched relative to the index.html
-            const response = await fetch('./data/votes.json');
-            votesData = await response.json();
-            console.log("Loaded data:", votesData);
-            if (votesData && votesData.length > 0) {
-                showVote(0);
-                updateScoreboardUI();
-            } else {
-                displayError("Aucun vote disponible. Veuillez lancer le script de mise à jour des données !");
-            }
-        } catch (e) {
-            console.error(e);
-            displayError("Impossible de charger les votes. Vérifiez la console pour plus de détails.");
-        }
+  function formatTitle(text) {
+    if (!text) return "";
+    let clean = text.trim();
+    return clean.charAt(0).toUpperCase() + clean.slice(1);
+  }
+
+  async function init() {
+    try {
+      const response = await fetch('./data/votes.json');
+      votesData = await response.json();
+      if (votesData && votesData.length > 0) {
+        showVote(0);
+        updateGlobalScoreboardUI();
+      } else {
+        document.getElementById('vote-title').innerText = "Aucun vote disponible.";
+      }
+    } catch (e) {
+      document.getElementById('vote-title').innerText = "Erreur de chargement des données.";
+    }
+  }
+
+  function showVote(index) {
+    if (index >= votesData.length) {
+      document.getElementById('game-card').innerHTML = `
+        <div style="text-align: center; padding: 2rem 1rem;">
+          <h2>🎉 Session terminée !</h2>
+          <p style="color: var(--text-muted);">Vous avez voté sur l'ensemble des textes disponibles.</p>
+          <button class="btn-next" onclick="location.reload()">Recommencer</button>
+        </div>`;
+      return;
     }
 
-    // Function to show a dynamic error message
-    function displayError(message) {
-        document.getElementById('vote-title').innerText = "Oups ! Une erreur s'est produite.";
-        document.getElementById('game-card').innerHTML += `<p class="error" style="color:var(--contre); text-align:center;">${message}</p>`;
+    const current = votesData[index];
+    document.getElementById('vote-title').innerText = formatTitle(current.titre);
+    
+    const formattedDate = current.date ? new Date(current.date).toLocaleDateString('fr-FR') : '';
+    document.getElementById('vote-number').innerText = `Scrutin n°${current.numero} du ${formattedDate}`;
+    
+    document.getElementById('vote-url').href = current.url;
+    document.getElementById('vote-actions').style.display = 'grid';
+    document.getElementById('result-zone').style.display = 'none';
+    
+    document.getElementById('summary-box').innerHTML = `
+      <p style="font-size: 0.875rem; color: var(--text-muted); margin: 0;">Votez ci-contre pour afficher la synthèse des groupes.</p>
+    `;
+  }
+
+  function submitVote(userChoice) {
+    const current = votesData[currentIndex];
+    let scores = JSON.parse(localStorage.getItem('political_scores') || '{}');
+    let totalVotes = parseInt(localStorage.getItem('total_votes') || '0') + 1;
+
+    let breakdownHtml = "";
+    let pourCount = 0, contreCount = 0, abstCount = 0;
+
+    for (const [groupCode, groupChoice] of Object.entries(current.groupes)) {
+      const config = GROUP_CONFIG[groupCode] || { name: groupCode, short: groupCode.substring(0,3), color: "#64748B" };
+      const matched = (userChoice === groupChoice);
+
+      if (groupChoice === "POUR") pourCount++;
+      else if (groupChoice === "CONTRE") contreCount++;
+      else abstCount++;
+
+      let choiceBadgeClass = groupChoice === "POUR" ? "badge-pour" : (groupChoice === "CONTRE" ? "badge-contre" : "badge-abst");
+
+      breakdownHtml += `
+        <div class="party-card">
+          <div class="party-info">
+            <div class="party-avatar" style="background-color: ${config.color};">${config.short}</div>
+            <div>
+              <div style="font-size:0.875rem; font-weight:600;">${config.name}</div>
+              <span class="badge ${choiceBadgeClass}">${groupChoice}</span>
+            </div>
+          </div>
+          <span style="font-size:1.1rem;">${matched ? '✅' : '❌'}</span>
+        </div>
+      `;
+
+      if (matched) {
+        scores[config.name] = (scores[config.name] || 0) + 1;
+      } else if (!scores[config.name]) {
+        scores[config.name] = 0;
+      }
     }
 
-    // Displays the current vote
-    function showVote(index) {
-        if (index >= votesData.length) {
-            document.getElementById('game-card').innerHTML = `
-                <h2 style="text-align:center;">🎉 Merci d'avoir participé !</h2>
-                <p style="text-align:center; color: var(--text-secondary);">Vous avez répondu à tous les récents votes de l'Assemblée nationale. Votre profil global est mis à jour sur la droite. Revenez plus tard pour de nouveaux scrutins !</p>
-                <p style="text-align:center;"><a href="." class="text-link-btn" style="border-radius: 999px;">🔄 Recommencer la session</a></p>`;
-            return;
-        }
+    localStorage.setItem('political_scores', JSON.stringify(scores));
+    localStorage.setItem('total_votes', totalVotes.toString());
 
-        const current = votesData[index];
-        const formattedDate = new Date(current.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    document.getElementById('vote-actions').style.display = 'none';
+    document.getElementById('result-zone').style.display = 'block';
+    
+    const userBadge = document.getElementById('user-vote-badge');
+    userBadge.innerText = userChoice;
+    userBadge.className = `badge badge-${userChoice.toLowerCase().substring(0,4)}`;
 
-        document.getElementById('vote-date').innerText = `Scrutin n°${current.numero} du ${formattedDate}`;
-        document.getElementById('vote-title').innerText = current.titre;
-        document.getElementById('vote-url').href = current.url;
-        document.getElementById('game-card').querySelector('.tag.abstention').innerText = "À Voter";
-        document.getElementById('result-card').style.display = 'none';
+    document.getElementById('parties-breakdown').innerHTML = breakdownHtml;
+
+    document.getElementById('summary-box').innerHTML = `
+      <div class="summary-stat" style="background-color: var(--pour-bg); color: #14532D;">
+        <span>Pour</span> <b>${pourCount} groupes</b>
+      </div>
+      <div class="summary-stat" style="background-color: var(--contre-bg); color: #7F1D1D;">
+        <span>Contre</span> <b>${contreCount} groupes</b>
+      </div>
+      <div class="summary-stat" style="background-color: var(--abst-bg); color: #1E293B;">
+        <span>Abstention</span> <b>${abstCount} groupes</b>
+      </div>
+    `;
+
+    updateGlobalScoreboardUI();
+  }
+
+  function nextVote() {
+    currentIndex++;
+    showVote(currentIndex);
+  }
+
+  function updateGlobalScoreboardUI() {
+    const scores = JSON.parse(localStorage.getItem('political_scores') || '{}');
+    const totalVotes = parseInt(localStorage.getItem('total_votes') || '0');
+
+    if (totalVotes === 0 || Object.keys(scores).length === 0) return;
+
+    const sorted = Object.entries(scores)
+      .map(([name, score]) => ({ name, pct: Math.round((score / totalVotes) * 100) }))
+      .sort((a, b) => b.pct - a.pct);
+
+    let html = "";
+    for (const { name, pct } of sorted) {
+      const config = Object.values(GROUP_CONFIG).find(c => c.name === name) || { color: "#2563EB" };
+      html += `
+        <div class="score-card">
+          <div class="score-header">
+            <span class="score-party-name">${name}</span>
+            <span class="score-pct" style="color: ${config.color};">${pct}%</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" style="width: ${pct}%; background-color: ${config.color};"></div>
+          </div>
+        </div>
+      `;
     }
 
-    // When a user votes, comparing with groups
-    function submitVote(userChoice) {
-        const current = votesData[currentIndex];
-        let scores = JSON.parse(localStorage.getItem('political_scores') || '{}');
-        let totalVotes = parseInt(localStorage.getItem('total_votes') || '0') + 1;
-        
-        let breakdownHtml = "";
+    document.getElementById('global-scores').innerHTML = html;
+  }
 
-        for (const [groupCode, groupChoice] of Object.entries(current.groupes)) {
-            const groupInfo = GROUP_CONFIG[groupCode] || { name: groupCode, initial: "?", color: "#ccc" };
-            const matched = (userChoice === groupChoice);
-            
-            // Modernizing the breakdown element as dynamic group cards
-            breakdownHtml += `
-                <div class="group-result-card" style="border-color: ${groupInfo.color}">
-                    <div class="party-logo" style="color: ${groupInfo.color}; border-color: ${groupInfo.color}">${groupInfo.initial}</div>
-                    <div class="party-info">
-                        <span class="party-name">${groupInfo.name}</span>
-                        <span class="tag ${groupChoice.toLowerCase()}">${groupChoice}</span>
-                    </div>
-                    <div class="agreement-icon ${matched ? 'yes' : 'no'}">
-                        <svg class="icon" viewBox="0 0 20 20"><path d="${matched ? 'M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z' : 'M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'}"/></svg>
-                    </div>
-                </div>`;
-
-            if (matched) {
-                scores[groupInfo.name] = (scores[groupInfo.name] || 0) + 1;
-            } else {
-                // To track alignment over time, we store agreement and *disagreement* as a ratio.
-                // An easy way is to ensure all groups have an entry with `0` agreement initially.
-                if (!scores[groupInfo.name]) scores[groupInfo.name] = 0;
-            }
-        }
-
-        // Show your own choice
-        const userTag = document.getElementById('user-choice-tag');
-        userTag.innerText = userChoice;
-        userTag.className = `tag ${userChoice.toLowerCase()}`;
-
-        // Save scores to LocalStorage
-        localStorage.setItem('political_scores', JSON.stringify(scores));
-        localStorage.setItem('total_votes', totalVotes.toString());
-
-        document.getElementById('breakdown').innerHTML = breakdownHtml;
-        document.getElementById('result-card').style.display = 'block';
-        updateScoreboardUI();
-    }
-
-    // Move to next vote
-    function nextVote() {
-        currentIndex++;
-        showVote(currentIndex);
-    }
-
-    // Renders the overall scoreboard in the sidebar
-    function updateScoreboardUI() {
-        const scores = JSON.parse(localStorage.getItem('political_scores') || '{}');
-        const totalVotes = parseInt(localStorage.getItem('total_votes') || '0');
-        
-        if (totalVotes === 0 || Object.keys(scores).length === 0) return;
-
-        let html = '';
-        // Sorting groups by agreement percentage (descending)
-        const sortedGroups = Object.entries(scores)
-            .map(([group, score]) => ({ group, pct: Math.round((score / totalVotes) * 100) }))
-            .sort((a, b) => b.pct - a.pct);
-
-        for (const { group, pct } of sortedGroups) {
-            // Find colour for this group (if config available)
-            const groupInfo = Object.values(GROUP_CONFIG).find(c => c.name === group) || { color: '#ccc' };
-
-            html += `
-                <div class="overall-score-card">
-                    <span class="group-name">${group}</span>
-                    <div class="percentage-display">
-                        <span class="pct-num" style="color: ${groupInfo.color};">${pct}%</span>
-                        <span class="pct-text">D'ACCORD</span>
-                    </div>
-                </div>`;
-        }
-        document.getElementById('scores-container').innerHTML = html;
-        document.querySelector('.alignment-sidebar p.small').style.display = 'block'; // Make description visible
-    }
-
-    init(); // Start the app
+  init();
 </script>
 </body>
 </html>

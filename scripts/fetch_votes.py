@@ -8,13 +8,13 @@ URL_OPEN_DATA = "https://data.assemblee-nationale.fr/static/openData/repository/
 
 def fetch_and_process_votes():
     print("Téléchargement des données de l'Assemblée nationale...")
-    req = urllib.request.Request(URL_OPEN_DATA, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+    req = urllib.request.Request(URL_OPEN_DATA, headers={'User-Agent': 'Mozilla/5.0'})
     
     try:
         with urllib.request.urlopen(req) as response:
             zip_buffer = io.BytesIO(response.read())
     except Exception as e:
-        print(f"Erreur lors du téléchargement de l'API : {e}")
+        print(f"Erreur lors du téléchargement : {e}")
         return
 
     processed_votes = []
@@ -27,12 +27,28 @@ def fetch_and_process_votes():
                         content = json.load(f)
                         data = content.get('scrutin', {})
                         
-                        titre = data.get('titre', '')
-                        if not titre:
+                        raw_titre = data.get('titre', '')
+                        if not raw_titre:
                             continue
 
-                        # Filtre sur les votes généraux
-                        if "sur l'ensemble" in titre.lower() or "projet de loi" in titre.lower():
+                        titre_lower = raw_titre.lower()
+
+                        # EXCLUSION DES AMENDEMENTS ET ARTICLES SPECIFIQUES (Incompréhensibles seuls)
+                        if "amendement" in titre_lower or "article" in titre_lower:
+                            continue
+
+                        # FILTRAGE UNIQUEMENT SUR LES TEXTES MAJEURS
+                        is_major_vote = (
+                            "sur l'ensemble" in titre_lower or 
+                            "projet de loi" in titre_lower or 
+                            "proposition de loi" in titre_lower or
+                            "motion de censure" in titre_lower
+                        )
+
+                        if is_major_vote:
+                            clean_titre = raw_titre.strip()
+                            clean_titre = clean_titre[0].upper() + clean_titre[1:]
+
                             groupes_votes = {}
                             ventilation = data.get('ventilationVotes', {}).get('organe', {}).get('groupes', {}).get('groupe', [])
                             
@@ -53,15 +69,14 @@ def fetch_and_process_votes():
                                 "id": data.get('uid'),
                                 "numero": data.get('numero'),
                                 "date": data.get('dateScrutin'),
-                                "titre": titre,
+                                "titre": clean_titre,
                                 "url": f"https://www.assemblee-nationale.fr/dyn/17/scrutins/{data.get('numero')}",
                                 "groupes": groupes_votes
                             })
     except Exception as e:
-        print(f"Erreur lors de la lecture du fichier ZIP : {e}")
+        print(f"Erreur : {e}")
         return
 
-    # Trier par numéro de scrutin (plus récents d'abord)
     processed_votes.sort(key=lambda x: int(x['numero']) if str(x['numero']).isdigit() else 0, reverse=True)
     final_data = processed_votes[:50]
 
@@ -69,7 +84,7 @@ def fetch_and_process_votes():
     with open('data/votes.json', 'w', encoding='utf-8') as f:
         json.dump(final_data, f, ensure_ascii=False, indent=2)
         
-    print(f"Succès : {len(final_data)} votes enregistrés dans data/votes.json")
+    print(f"Succès : {len(final_data)} grands votes enregistrés dans data/votes.json")
 
 if __name__ == "__main__":
     fetch_and_process_votes()
