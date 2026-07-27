@@ -474,63 +474,7 @@
     document.getElementById('global-scores').innerHTML = html;
   }
   
-  function ResetAlignmentButton({ onReset }) {
-  return (
-    <button
-      onClick={onReset}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 hover:text-gray-900 rounded-md transition-colors"
-      title="Réinitialiser l'alignement"
-    >
-      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-      </svg>
-      Réinitialiser l'alignement
-    </button>
-  );
-}
 
-function PartyVoteRow({ group }) {
-  const info = getGroupInfo(group.id, group.name);
-
-  return (
-    <div className="flex items-center justify-between p-2.5 my-1 bg-white border border-gray-100 rounded-lg shadow-sm hover:border-gray-200 transition-all">
-      {/* 1. Logo/Badge + Nom du parti */}
-      <div className="flex items-center gap-3 min-w-[220px]">
-        <span 
-          className="flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold shrink-0"
-          style={{ backgroundColor: info.bg, color: info.text }}
-        >
-          {info.shortName}
-        </span>
-        <span className="text-sm font-semibold text-gray-800 truncate">
-          {info.name}
-        </span>
-      </div>
-
-      {/* 2. Vote global (POUR / CONTRE / ABSTENTION) */}
-      <div className="flex-1 flex justify-center px-2">
-        <span className={`px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${
-          group.globalVote === 'POUR' 
-            ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
-            : group.globalVote === 'CONTRE' 
-            ? 'bg-rose-100 text-rose-800 border border-rose-200' 
-            : 'bg-amber-100 text-amber-800 border border-amber-200'
-        }`}>
-          {group.globalVote}
-        </span>
-      </div>
-
-      {/* 3. Décompte des votes internes */}
-      <div className="flex items-center gap-2 text-xs font-medium text-gray-500 min-w-[180px] justify-end">
-        <span className="text-emerald-600 font-semibold">{group.votes.pour} pour</span>
-        <span>•</span>
-        <span className="text-rose-600 font-semibold">{group.votes.contre} contre</span>
-        <span>•</span>
-        <span className="text-amber-600 font-semibold">{group.votes.abstention} abst.</span>
-      </div>
-    </div>
-  );
-}
 
   init();
 </script>
