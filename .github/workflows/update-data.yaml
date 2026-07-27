@@ -1,0 +1,29 @@
+name: Mettre a jour les votes
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # S'exécute chaque jour à minuit
+  workflow_dispatch: # Permet de lancer la mise à jour manuellement si besoin
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Configurer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Télécharger les nouveaux votes
+        run: python scripts/fetch_votes.py
+
+      - name: Sauvegarder et commiter les modifications
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add data/votes.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "Mise à jour automatique des votes"
+          git push
