@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Télécharger les nouveaux votes
+      - name: Télécharger et traiter les scrutins
         run: python scripts/fetch_votes.py
 
       - name: Sauvegarder et commiter les modifications

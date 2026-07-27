@@ -1,113 +1,256 @@
+import io
 import json
 import os
-from datetime import datetime
+import urllib.request
+import zipfile
 
-# Table de correspondance complète pour la 17e législature (post-dissolution 2024)
+# Table de correspondance officielle pour la 17e législature (post-dissolution 2024)
 GROUPS_MAPPING = {
-    "PO845401": {"name": "La France insoumise - NFP", "shortName": "LFI", "bg": "#cc0000", "text": "#ffffff"},
-    "PO845407": {"name": "Ensemble pour la République", "shortName": "EPR", "bg": "#ffb900", "text": "#000000"},
-    "PO845413": {"name": "Rassemblement National", "shortName": "RN", "bg": "#0d2040", "text": "#ffffff"},
-    "PO845419": {"name": "Gauche Démocrate et Républicaine", "shortName": "GDR", "bg": "#dd2129", "text": "#ffffff"},
-    "PO845425": {"name": "Libertés, Indépendance, Outre-mer et Territoires", "shortName": "LIOT", "bg": "#f39c12", "text": "#ffffff"},
-    "PO845439": {"name": "Écologiste et Social", "shortName": "ECO", "bg": "#00a651", "text": "#ffffff"},
-    "PO845454": {"name": "Socialistes et apparentés", "shortName": "SOC", "bg": "#e40046", "text": "#ffffff"},
-    "PO845470": {"name": "Horizons & Indépendants", "shortName": "HOR", "bg": "#00a896", "text": "#ffffff"},
-    "PO84585": {"name": "Droite Républicaine", "shortName": "DR", "bg": "#0055a5", "text": "#ffffff"},
-    "PO845514": {"name": "Union des Droites pour la République", "shortName": "UDR", "bg": "#1e3799", "text": "#ffffff"},
-    "PO872880": {"name": "Les Démocrates", "shortName": "DEM", "bg": "#e67e22", "text": "#ffffff"},
-    "PO840056": {"name": "Non-inscrits", "shortName": "NI", "bg": "#718093", "text": "#ffffff"}
+    "PO845401": {
+        "name": "La France insoumise - NFP",
+        "shortName": "LFI",
+        "bg": "#cc0000",
+        "text": "#ffffff",
+    },
+    "PO845407": {
+        "name": "Ensemble pour la République",
+        "shortName": "EPR",
+        "bg": "#ffb900",
+        "text": "#000000",
+    },
+    "PO845413": {
+        "name": "Rassemblement National",
+        "shortName": "RN",
+        "bg": "#0d2040",
+        "text": "#ffffff",
+    },
+    "PO845419": {
+        "name": "Gauche Démocrate et Républicaine",
+        "shortName": "GDR",
+        "bg": "#dd2129",
+        "text": "#ffffff",
+    },
+    "PO845425": {
+        "name": "Libertés, Indépendance, Outre-mer et Territoires",
+        "shortName": "LIOT",
+        "bg": "#f39c12",
+        "text": "#ffffff",
+    },
+    "PO845439": {
+        "name": "Écologiste et Social",
+        "shortName": "ECO",
+        "bg": "#00a651",
+        "text": "#ffffff",
+    },
+    "PO845454": {
+        "name": "Socialistes et apparentés",
+        "shortName": "SOC",
+        "bg": "#e40046",
+        "text": "#ffffff",
+    },
+    "PO845470": {
+        "name": "Horizons & Indépendants",
+        "shortName": "HOR",
+        "bg": "#00a896",
+        "text": "#ffffff",
+    },
+    "PO845485": {
+        "name": "Droite Républicaine",
+        "shortName": "DR",
+        "bg": "#0055a5",
+        "text": "#ffffff",
+    },
+    "PO845514": {
+        "name": "Union des Droites pour la République",
+        "shortName": "UDR",
+        "bg": "#1e3799",
+        "text": "#ffffff",
+    },
+    "PO872880": {
+        "name": "Les Démocrates",
+        "shortName": "DEM",
+        "bg": "#e67e22",
+        "text": "#ffffff",
+    },
+    "PO840056": {
+        "name": "Non-inscrits",
+        "shortName": "NI",
+        "bg": "#718093",
+        "text": "#ffffff",
+    },
 }
 
 DISSOLUTION_DATE = "2024-06-09"
+ZIP_URL = "https://data.assemblee-nationale.fr/static/openData/repository/17/loi/scrutins/Scrutins.json.zip"
+
 
 def get_group_metadata(group_id, raw_name=""):
-    """Récupère le nom lisible et les couleurs d'un groupe parlementaire."""
-    if group_id in GROUPS_MAPPING:
-        return GROUPS_MAPPING[group_id]
-    return {
-        "name": raw_name if raw_name else f"Groupe {group_id}",
-        "shortName": "AUTRE",
-        "bg": "#6c757d",
-        "text": "#ffffff"
-    }
+  if group_id in GROUPS_MAPPING:
+    return GROUPS_MAPPING[group_id]
+  return {
+      "name": raw_name if raw_name else f"Groupe {group_id}",
+      "shortName": "AUTRE",
+      "bg": "#6c757d",
+      "text": "#ffffff",
+  }
 
-def process_votes_data(raw_scrutins_list):
-    """
-    Filtre et formate tous les scrutins depuis la dernière dissolution (17e législature).
-    """
-    processed_votes = []
 
-    for scrutin in raw_scrutins_list:
-        date_scrutin = scrutin.get('dateScrutin', '')
-        legislature = str(scrutin.get('legislature', ''))
+def extract_raw_groups(scrutin):
+  """Extrait la liste des groupes parlementaires du JSON d'un scrutin."""
+  ventilation = scrutin.get("ventilationVotes", {})
+  if not ventilation:
+    return []
 
-        is_post_dissolution = (
-            legislature == "17" or 
-            (date_scrutin and date_scrutin >= DISSOLUTION_DATE)
-        )
+  organe_root = ventilation.get("organe", {})
+  if isinstance(organe_root, dict):
+    organes_container = organe_root.get("organes", {})
+    if isinstance(organes_container, dict):
+      organes = organes_container.get("organe", [])
+      if isinstance(organes, list):
+        return organes
+      elif isinstance(organes, dict):
+        return [organes]
 
-        if not is_post_dissolution:
-            continue
+  raw_organes = ventilation.get("organes", [])
+  if isinstance(raw_organes, list):
+    return raw_organes
+  elif isinstance(raw_organes, dict):
+    return [raw_organes]
 
-        groups_detail = []
-        raw_groups = scrutin.get('ventilationVotes', {}).get('organes', [])
-        
-        if isinstance(raw_groups, dict):
-            raw_groups = [raw_groups]
+  return []
 
-        for grp in raw_groups:
-            group_id = grp.get('organeRef', '')
-            meta = get_group_metadata(group_id, grp.get('libelle', ''))
-            
-            votes_count = {
-                'pour': int(grp.get('pour', 0)),
-                'contre': int(grp.get('contre', 0)),
-                'abstention': int(grp.get('nonVotants', 0)) + int(grp.get('abstentions', 0))
-            }
 
-            if votes_count['pour'] >= votes_count['contre'] and votes_count['pour'] >= votes_count['abstention']:
-                global_vote = "POUR"
-            elif votes_count['contre'] >= votes_count['pour'] and votes_count['contre'] >= votes_count['abstention']:
-                global_vote = "CONTRE"
-            else:
-                global_vote = "ABSTENTION"
+def process_single_scrutin(scrutin):
+  """Traite un fichier JSON de scrutin individuel."""
+  if "scrutin" in scrutin and isinstance(scrutin["scrutin"], dict):
+    scrutin = scrutin["scrutin"]
 
-            groups_detail.append({
-                "id": group_id,
-                "name": meta["name"],
-                "shortName": meta["shortName"],
-                "bg": meta["bg"],
-                "text": meta["text"],
-                "globalVote": global_vote,
-                "votes": votes_count
-            })
+  date_scrutin = str(scrutin.get("dateScrutin", ""))
+  legislature = str(scrutin.get("legislature", ""))
 
-        num_scrutin = str(scrutin.get('numero', '0'))
+  is_post_dissolution = legislature == "17" or (
+      date_scrutin and date_scrutin >= DISSOLUTION_DATE
+  )
+  if not is_post_dissolution:
+    return None
 
-        processed_votes.append({
-            "numero": num_scrutin,
-            "titre": scrutin.get('titre', 'Scrutin sans titre'),
-            "date": date_scrutin,
-            "url": f"https://www.assemblee-nationale.fr/dyn/17/scrutins/{num_scrutin}",
-            "groups": groups_detail
-        })
+  raw_groups = extract_raw_groups(scrutin)
+  groups_detail = []
 
-    processed_votes.sort(
-        key=lambda x: int(x['numero']) if str(x['numero']).isdigit() else 0, 
-        reverse=True
+  for grp in raw_groups:
+    group_id = grp.get("organeRef", "")
+    libelle = grp.get("libelle", "")
+    meta = get_group_metadata(group_id, libelle)
+
+    vote_obj = grp.get("vote", {})
+    decompte = (
+        vote_obj.get("decompteVoix", {})
+        if isinstance(vote_obj, dict)
+        else {}
     )
 
-    return processed_votes
+    pour = int(
+        grp.get("pour")
+        or decompte.get("pour")
+        or (vote_obj.get("decomptePour") if isinstance(vote_obj, dict) else 0)
+        or 0
+    )
+    contre = int(
+        grp.get("contre")
+        or decompte.get("contre")
+        or (
+            vote_obj.get("decompteContre") if isinstance(vote_obj, dict) else 0
+        )
+        or 0
+    )
+    abstention = int(
+        grp.get("nonVotants") or decompte.get("nonVotants") or 0
+    ) + int(grp.get("abstentions") or decompte.get("abstentions") or 0)
+
+    pos_maj = (
+        vote_obj.get("positionMajoritaire", "")
+        if isinstance(vote_obj, dict)
+        else ""
+    )
+    if pos_maj:
+      global_vote = pos_maj.upper()
+    else:
+      if pour >= contre and pour >= abstention:
+        global_vote = "POUR"
+      elif contre >= pour and contre >= abstention:
+        global_vote = "CONTRE"
+      else:
+        global_vote = "ABSTENTION"
+
+    groups_detail.append({
+        "id": group_id,
+        "name": meta["name"],
+        "shortName": meta["shortName"],
+        "bg": meta["bg"],
+        "text": meta["text"],
+        "globalVote": global_vote,
+        "votes": {"pour": pour, "contre": contre, "abstention": abstention},
+    })
+
+  num_scrutin = str(scrutin.get("numero", "0"))
+  titre = scrutin.get("titre") or "Scrutin sans titre"
+
+  return {
+      "numero": num_scrutin,
+      "titre": titre,
+      "date": date_scrutin,
+      "url": f"https://www.assemblee-nationale.fr/dyn/17/scrutins/{num_scrutin}",
+      "groups": groups_detail,
+  }
+
+
+def fetch_from_open_data():
+  """Télécharge l'archive officielle depuis data.assemblee-nationale.fr"""
+  print(f"Téléchargement depuis {ZIP_URL}...")
+  req = urllib.request.Request(ZIP_URL, headers={"User-Agent": "Mozilla/5.0"})
+
+  with urllib.request.urlopen(req, timeout=60) as response:
+    zip_data = response.read()
+
+  scrutins_list = []
+  with zipfile.ZipFile(io.BytesIO(zip_data)) as z:
+    for filename in z.namelist():
+      if filename.endswith(".json"):
+        with z.open(filename) as f:
+          try:
+            data = json.load(f)
+            processed = process_single_scrutin(data)
+            if processed and processed.get("groups"):
+              scrutins_list.append(processed)
+          except Exception:
+            continue
+  return scrutins_list
+
+
+def main():
+  os.makedirs("data", exist_ok=True)
+  processed_votes = []
+
+  try:
+    processed_votes = fetch_from_open_data()
+    print(
+        f"Succès : {len(processed_votes)} scrutins récupérés via l'Open Data."
+    )
+  except Exception as e:
+    print(f"Erreur lors du téléchargement : {e}")
+
+  # Tri du plus récent au plus ancien
+  processed_votes.sort(
+      key=lambda x: int(x["numero"]) if str(x["numero"]).isdigit() else 0,
+      reverse=True,
+  )
+
+  output_path = "data/votes.json"
+  with open(output_path, "w", encoding="utf-8") as f:
+    json.dump(processed_votes, f, ensure_ascii=False, indent=2)
+
+  print(f"Fichier sauvegardé dans {output_path}")
+
 
 if __name__ == "__main__":
-    os.makedirs("data", exist_ok=True)
-    raw_data = []
-    
-    if os.path.exists("data/raw_scrutins.json"):
-        with open("data/raw_scrutins.json", "r", encoding="utf-8") as f:
-            raw_data = json.load(f)
-            
-    output_data = process_votes_data(raw_data)
-    
-    with open("data/votes.json", "w", encoding="utf-8") as f:
-        json.dump(output_data, f, ensure_ascii=False, indent=2)
+  main()
