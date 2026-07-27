@@ -34,7 +34,7 @@
     }
 
     .container {
-      max-width: 1100px;
+      max-width: 850px;
       margin: 0 auto;
     }
 
@@ -44,31 +44,20 @@
       margin-bottom: 2rem;
     }
     header h1 {
-      font-size: 2.2rem;
+      font-size: 2rem;
       font-weight: 800;
       margin: 0 0 0.5rem 0;
     }
     header p {
       color: var(--text-muted);
-      font-size: 1.05rem;
+      font-size: 1rem;
       margin: 0;
-    }
-
-    /* Grille principale */
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1fr 300px;
-      gap: 1.5rem;
-    }
-
-    @media (max-width: 850px) {
-      .main-grid { grid-template-columns: 1fr; }
     }
 
     .card {
       background: var(--card-bg);
       border-radius: 1rem;
-      padding: 1.75rem;
+      padding: 1.5rem;
       box-shadow: var(--shadow);
       border: 1px solid var(--border);
     }
@@ -77,7 +66,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.25rem;
+      margin-bottom: 1rem;
       padding-bottom: 0.75rem;
       border-bottom: 1px solid var(--border);
     }
@@ -85,9 +74,9 @@
     .badge {
       display: inline-flex;
       align-items: center;
-      padding: 0.35rem 0.85rem;
+      padding: 0.3rem 0.75rem;
       border-radius: 9999px;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
     }
@@ -97,9 +86,9 @@
     .badge-abst { background-color: var(--abst-bg); color: #1E293B; }
 
     .vote-title {
-      font-size: 1.35rem;
+      font-size: 1.25rem;
       font-weight: 700;
-      margin: 0 0 1.25rem 0;
+      margin: 0 0 1rem 0;
       line-height: 1.4;
     }
 
@@ -110,8 +99,8 @@
       color: var(--primary);
       text-decoration: none;
       font-weight: 600;
-      font-size: 0.925rem;
-      margin-bottom: 1.75rem;
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
     }
     .link-official:hover { text-decoration: underline; }
 
@@ -119,7 +108,7 @@
     .actions-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 1rem;
+      gap: 0.85rem;
     }
 
     @media (max-width: 500px) {
@@ -129,8 +118,8 @@
     .btn-vote {
       border: none;
       border-radius: 0.75rem;
-      padding: 1.1rem 0.75rem;
-      font-size: 1.1rem;
+      padding: 1rem 0.75rem;
+      font-size: 1rem;
       font-weight: 800;
       cursor: pointer;
       color: white;
@@ -145,10 +134,10 @@
     /* Résultat immédiat & Bouton Suivant */
     .result-banner {
       background: #F8FAFC;
-      border: 2px solid var(--border);
-      border-radius: 0.85rem;
-      padding: 1.25rem;
-      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.25rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -160,27 +149,27 @@
       background-color: var(--primary);
       color: white;
       border: none;
-      padding: 0.85rem 1.6rem;
-      border-radius: 0.65rem;
+      padding: 0.75rem 1.4rem;
+      border-radius: 0.6rem;
       font-weight: 700;
-      font-size: 1rem;
+      font-size: 0.95rem;
       cursor: pointer;
       transition: background-color 0.15s;
     }
     .btn-next:hover { background-color: var(--primary-hover); }
 
-    /* Ventilation des Partis */
+    /* Position des Partis */
     .parties-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 0.85rem;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 0.75rem;
       margin-top: 1rem;
     }
 
     .party-card {
       border: 1px solid var(--border);
-      border-radius: 0.65rem;
-      padding: 0.85rem 1rem;
+      border-radius: 0.6rem;
+      padding: 0.75rem 0.85rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -190,57 +179,85 @@
     .party-info { display: flex; align-items: center; gap: 0.65rem; }
 
     .party-avatar {
-      width: 36px;
-      height: 36px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 800;
-      font-size: 0.8rem;
-      color: white;
+      font-size: 0.75rem;
+      flex-shrink: 0;
     }
 
-    .summary-box { display: flex; flex-direction: column; gap: 0.75rem; }
-    .summary-stat {
-      display: flex;
-      justify-content: space-between;
-      padding: 0.65rem 0.85rem;
-      border-radius: 0.5rem;
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-
-    /* Profil Global */
+    /* Profil Global - Version Compacte & Claire */
     .profile-section { margin-top: 2rem; }
+    
     .scores-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 0.75rem;
       margin-top: 1rem;
     }
 
     .score-card {
       background: white;
       border: 1px solid var(--border);
-      border-radius: 0.75rem;
-      padding: 1.1rem;
+      border-radius: 0.6rem;
+      padding: 0.75rem 0.85rem;
       display: flex;
       flex-direction: column;
-      gap: 0.65rem;
+      gap: 0.5rem;
     }
 
-    .score-header { display: flex; justify-content: space-between; align-items: center; }
-    .score-party-name { font-weight: 700; }
-    .score-pct { font-size: 1.3rem; font-weight: 800; }
+    .score-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .score-party-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      overflow: hidden;
+    }
+
+    .score-badge {
+      padding: 0.2rem 0.45rem;
+      border-radius: 0.35rem;
+      font-weight: 800;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .score-party-name {
+      font-weight: 700;
+      font-size: 0.85rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .score-pct {
+      font-size: 1.05rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
 
     .progress-bar-bg {
-      height: 8px;
+      height: 6px;
       background: #E2E8F0;
       border-radius: 999px;
       overflow: hidden;
     }
-    .progress-bar-fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
   </style>
 </head>
 <body>
@@ -251,63 +268,51 @@
     <p>Votez sur les lois réelles de l'Assemblée nationale et découvrez votre affinité politique.</p>
   </header>
 
-  <div class="main-grid">
-    <main>
-      <div id="game-card" class="card">
-        <div class="meta-bar">
-          <span id="vote-number" style="font-weight:600; color:var(--text-muted); font-size:0.9rem;">Scrutin n°...</span>
-          <span id="vote-type-badge" class="badge badge-type">Projet de loi</span>
-        </div>
+  <main>
+    <div id="game-card" class="card">
+      <div class="meta-bar">
+        <span id="vote-number" style="font-weight:600; color:var(--text-muted); font-size:0.875rem;">Scrutin n°...</span>
+        <span id="vote-type-badge" class="badge badge-type">17e Législature</span>
+      </div>
 
-        <h2 id="vote-title" class="vote-title">Chargement des données...</h2>
+      <h2 id="vote-title" class="vote-title">Chargement des données...</h2>
 
-        <a id="vote-url" href="#" target="_blank" class="link-official">
-          📄 Consulter le détail du texte sur Assemblee-Nationale.fr ↗
-        </a>
+      <a id="vote-url" href="#" target="_blank" class="link-official">
+        📄 Consulter le détail du texte sur Assemblee-Nationale.fr ↗
+      </a>
 
-        <!-- Boutons de Vote -->
-        <div id="vote-actions" class="actions-grid">
-          <button class="btn-vote btn-pour" onclick="submitVote('POUR')">👍 POUR</button>
-          <button class="btn-vote btn-contre" onclick="submitVote('CONTRE')">👎 CONTRE</button>
-          <button class="btn-vote btn-abst" onclick="submitVote('ABSTENTION')">✋ ABSTENTION</button>
-        </div>
+      <!-- Boutons de Vote -->
+      <div id="vote-actions" class="actions-grid">
+        <button class="btn-vote btn-pour" onclick="submitVote('POUR')">👍 POUR</button>
+        <button class="btn-vote btn-contre" onclick="submitVote('CONTRE')">👎 CONTRE</button>
+        <button class="btn-vote btn-abst" onclick="submitVote('ABSTENTION')">✋ ABSTENTION</button>
+      </div>
 
-        <!-- Zone de Résultat & Bouton Suivant Placé ici -->
-        <div id="result-zone" style="display: none; margin-top: 1.5rem;">
-          <div class="result-banner">
-            <div>
-              <span style="font-size: 0.85rem; color: var(--text-muted); display: block;">Votre vote :</span>
-              <span id="user-vote-badge" class="badge">POUR</span>
-            </div>
-            <button class="btn-next" onclick="nextVote()">Vote suivant ➔</button>
+      <!-- Zone de Résultat -->
+      <div id="result-zone" style="display: none; margin-top: 1.5rem;">
+        <div class="result-banner">
+          <div>
+            <span style="font-size: 0.85rem; color: var(--text-muted); display: block;">Votre vote :</span>
+            <span id="user-vote-badge" class="badge">POUR</span>
           </div>
-
-          <h3 style="font-size: 1.05rem; margin-bottom: 0.75rem;">Position des groupes politiques :</h3>
-          <div id="parties-breakdown" class="parties-grid"></div>
+          <button class="btn-next" onclick="nextVote()">Vote suivant ➔</button>
         </div>
-      </div>
-    </main>
 
-    <!-- Sidebar de Synthèse -->
-    <aside>
-      <div class="card">
-        <h3 style="font-size: 1.1rem; margin-top: 0; margin-bottom: 1rem;">Synthèse du vote</h3>
-        <div id="summary-box" class="summary-box">
-          <p style="font-size: 0.875rem; color: var(--text-muted); margin: 0;">Votez pour afficher la synthèse des partis.</p>
-        </div>
+        <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">Position des groupes politiques :</h3>
+        <div id="parties-breakdown" class="parties-grid"></div>
       </div>
-    </aside>
-  </div>
+    </div>
+  </main>
 
-  <!-- Alignement Politique Global en bas -->
+  <!-- Alignement Politique Global -->
   <section class="profile-section">
     <div class="card">
-      <h2 style="font-size: 1.3rem; margin: 0 0 0.5rem 0;">📊 Votre Alignement Politique Global</h2>
-      <p style="color: var(--text-muted); margin: 0 0 1rem 0; font-size: 0.9rem;">
-        Calculé à partir de l'ensemble de vos choix dans cette session.
+      <h2 style="font-size: 1.2rem; margin: 0 0 0.3rem 0;">📊 Votre Alignement Politique Global</h2>
+      <p style="color: var(--text-muted); margin: 0 0 0.85rem 0; font-size: 0.875rem;">
+        Calculé à partir de vos votes lors de cette session.
       </p>
       <div id="global-scores" class="scores-grid">
-        <p style="color: var(--text-muted); font-style: italic;">Aucun vote enregistré pour le moment.</p>
+        <p style="color: var(--text-muted); font-style: italic; font-size: 0.875rem;">Aucun vote enregistré pour le moment.</p>
       </div>
     </div>
   </section>
@@ -316,17 +321,6 @@
 <script>
   let votesData = [];
   let currentIndex = 0;
-
-  const GROUP_CONFIG = {
-    "PO845407": { name: "Rassemblement National", short: "RN", color: "#0000BA" },
-    "PO845413": { name: "La France Insoumise", short: "LFI", color: "#CC0000" },
-    "PO845401": { name: "Ensemble pour la République", short: "EPR", color: "#FFD700" },
-    "PO845454": { name: "Socialistes et apparentés", short: "SOC", color: "#ED0076" },
-    "PO845470": { name: "Droite Républicaine", short: "DR", color: "#005EB8" },
-    "PO845485": { name: "Écologiste et Social", short: "ECO", color: "#00B050" },
-    "PO845420": { name: "Les Démocrates", short: "DEM", color: "#FF8C00" },
-    "PO845439": { name: "Horizons", short: "HOR", color: "#00CED1" }
-  };
 
   function formatTitle(text) {
     if (!text) return "";
@@ -366,13 +360,9 @@
     const formattedDate = current.date ? new Date(current.date).toLocaleDateString('fr-FR') : '';
     document.getElementById('vote-number').innerText = `Scrutin n°${current.numero} du ${formattedDate}`;
     
-    document.getElementById('vote-url').href = current.url;
+    document.getElementById('vote-url').href = current.url || '#';
     document.getElementById('vote-actions').style.display = 'grid';
     document.getElementById('result-zone').style.display = 'none';
-    
-    document.getElementById('summary-box').innerHTML = `
-      <p style="font-size: 0.875rem; color: var(--text-muted); margin: 0;">Votez ci-contre pour afficher la synthèse des groupes.</p>
-    `;
   }
 
   function submitVote(userChoice) {
@@ -381,37 +371,37 @@
     let totalVotes = parseInt(localStorage.getItem('total_votes') || '0') + 1;
 
     let breakdownHtml = "";
-    let pourCount = 0, contreCount = 0, abstCount = 0;
+    const groups = current.groups || [];
 
-    for (const [groupCode, groupChoice] of Object.entries(current.groupes)) {
-      const config = GROUP_CONFIG[groupCode] || { name: groupCode, short: groupCode.substring(0,3), color: "#64748B" };
-      const matched = (userChoice === groupChoice);
-
-      if (groupChoice === "POUR") pourCount++;
-      else if (groupChoice === "CONTRE") contreCount++;
-      else abstCount++;
-
-      let choiceBadgeClass = groupChoice === "POUR" ? "badge-pour" : (groupChoice === "CONTRE" ? "badge-contre" : "badge-abst");
+    groups.forEach(grp => {
+      const matched = (userChoice === grp.globalVote);
+      const choiceBadgeClass = grp.globalVote === "POUR" ? "badge-pour" : (grp.globalVote === "CONTRE" ? "badge-contre" : "badge-abst");
 
       breakdownHtml += `
         <div class="party-card">
           <div class="party-info">
-            <div class="party-avatar" style="background-color: ${config.color};">${config.short}</div>
+            <div class="party-avatar" style="background-color: ${grp.bg}; color: ${grp.text};">${grp.shortName}</div>
             <div>
-              <div style="font-size:0.875rem; font-weight:600;">${config.name}</div>
-              <span class="badge ${choiceBadgeClass}">${groupChoice}</span>
+              <div style="font-size:0.85rem; font-weight:600;">${grp.name}</div>
+              <span class="badge ${choiceBadgeClass}">${grp.globalVote}</span>
             </div>
           </div>
           <span style="font-size:1.1rem;">${matched ? '✅' : '❌'}</span>
         </div>
       `;
 
-      if (matched) {
-        scores[config.name] = (scores[config.name] || 0) + 1;
-      } else if (!scores[config.name]) {
-        scores[config.name] = 0;
+      if (!scores[grp.id]) {
+        scores[grp.id] = { name: grp.name, shortName: grp.shortName, bg: grp.bg, text: grp.text, score: 0 };
       }
-    }
+      scores[grp.id].name = grp.name;
+      scores[grp.id].shortName = grp.shortName;
+      scores[grp.id].bg = grp.bg;
+      scores[grp.id].text = grp.text;
+
+      if (matched) {
+        scores[grp.id].score += 1;
+      }
+    });
 
     localStorage.setItem('political_scores', JSON.stringify(scores));
     localStorage.setItem('total_votes', totalVotes.toString());
@@ -424,18 +414,6 @@
     userBadge.className = `badge badge-${userChoice.toLowerCase().substring(0,4)}`;
 
     document.getElementById('parties-breakdown').innerHTML = breakdownHtml;
-
-    document.getElementById('summary-box').innerHTML = `
-      <div class="summary-stat" style="background-color: var(--pour-bg); color: #14532D;">
-        <span>Pour</span> <b>${pourCount} groupes</b>
-      </div>
-      <div class="summary-stat" style="background-color: var(--contre-bg); color: #7F1D1D;">
-        <span>Contre</span> <b>${contreCount} groupes</b>
-      </div>
-      <div class="summary-stat" style="background-color: var(--abst-bg); color: #1E293B;">
-        <span>Abstention</span> <b>${abstCount} groupes</b>
-      </div>
-    `;
 
     updateGlobalScoreboardUI();
   }
@@ -451,21 +429,26 @@
 
     if (totalVotes === 0 || Object.keys(scores).length === 0) return;
 
-    const sorted = Object.entries(scores)
-      .map(([name, score]) => ({ name, pct: Math.round((score / totalVotes) * 100) }))
+    const sorted = Object.values(scores)
+      .map(grp => ({
+        ...grp,
+        pct: Math.round((grp.score / totalVotes) * 100)
+      }))
       .sort((a, b) => b.pct - a.pct);
 
     let html = "";
-    for (const { name, pct } of sorted) {
-      const config = Object.values(GROUP_CONFIG).find(c => c.name === name) || { color: "#2563EB" };
+    for (const grp of sorted) {
       html += `
         <div class="score-card">
           <div class="score-header">
-            <span class="score-party-name">${name}</span>
-            <span class="score-pct" style="color: ${config.color};">${pct}%</span>
+            <div class="score-party-info">
+              <span class="score-badge" style="background-color: ${grp.bg}; color: ${grp.text};">${grp.shortName}</span>
+              <span class="score-party-name" title="${grp.name}">${grp.name}</span>
+            </div>
+            <span class="score-pct" style="color: ${grp.bg};">${grp.pct}%</span>
           </div>
           <div class="progress-bar-bg">
-            <div class="progress-bar-fill" style="width: ${pct}%; background-color: ${config.color};"></div>
+            <div class="progress-bar-fill" style="width: ${grp.pct}%; background-color: ${grp.bg};"></div>
           </div>
         </div>
       `;
@@ -473,132 +456,6 @@
 
     document.getElementById('global-scores').innerHTML = html;
   }
-  
-import React, { useState } from 'react';
-
-export default function PoliticalVotesDashboard({ scrutinsData, initialAlignment = 50 }) {
-  const [alignment, setAlignment] = useState(initialAlignment);
-  const [selectedScrutinId, setSelectedScrutinId] = useState(
-    scrutinsData.length > 0 ? scrutinsData[0].numero : null
-  );
-
-  const currentScrutin = scrutinsData.find(s => s.numero === selectedScrutinId) || scrutinsData[0];
-
-  const handleResetAlignment = () => {
-    setAlignment(50); // Réinitialise l'alignement global à 50% / Neutre
-  };
-
-  if (!scrutinsData || scrutinsData.length === 0) {
-    return <div className="p-4 text-gray-500">Aucun scrutin trouvé depuis la dissolution.</div>;
-  }
-
-  return (
-    <div className="max-w-5xl mx-auto p-4 font-sans text-gray-900">
-      {/* Barre supérieure : Sélecteur de scrutin + Statistiques */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-        <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
-            Base de données (17e Législature)
-          </span>
-          <h1 className="text-xl font-extrabold text-gray-800">
-            {scrutinsData.length} scrutins enregistrés
-          </h1>
-        </div>
-
-        {/* Bouton Reset de l'alignement */}
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-600">
-            Alignement global : <strong className="text-gray-900">{alignment}%</strong>
-          </span>
-          <button
-            onClick={handleResetAlignment}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-100 hover:text-gray-900 active:bg-gray-200 transition-all"
-            title="Réinitialiser l'alignement politique à la valeur par défaut"
-          >
-            <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Reset alignement
-          </button>
-        </div>
-      </div>
-
-      {/* Sélection du scrutin */}
-      <div className="mb-6">
-        <label htmlFor="scrutin-select" className="block text-sm font-medium text-gray-700 mb-1">
-          Choisir un scrutin :
-        </label>
-        <select
-          id="scrutin-select"
-          value={selectedScrutinId || ''}
-          onChange={(e) => setSelectedScrutinId(e.target.value)}
-          className="w-full p-2.5 bg-white border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-        >
-          {scrutinsData.map((s) => (
-            <option key={s.numero} value={s.numero}>
-              N°{s.numero} - {s.titre} ({s.date})
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Section : Position des groupes politiques */}
-      {currentScrutin && (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-          <h2 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">
-            Position des groupes politiques — Scrutin N°{currentScrutin.numero}
-          </h2>
-
-          <div className="flex flex-col gap-2">
-            {currentScrutin.groups.map((group) => (
-              <div
-                key={group.id}
-                className="flex items-center justify-between p-2.5 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200/60 transition-colors"
-              >
-                {/* 1. Badge & Nom du groupe */}
-                <div className="flex items-center gap-3 min-w-[240px]">
-                  <span
-                    className="flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold shrink-0 shadow-sm"
-                    style={{ backgroundColor: group.bg, color: group.text }}
-                  >
-                    {group.shortName}
-                  </span>
-                  <span className="text-sm font-semibold text-gray-800 truncate">
-                    {group.name}
-                  </span>
-                </div>
-
-                {/* 2. Décision globale (POUR / CONTRE / ABSTENTION) */}
-                <div className="flex-1 flex justify-center">
-                  <span
-                    className={`px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${
-                      group.globalVote === 'POUR'
-                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                        : group.globalVote === 'CONTRE'
-                        ? 'bg-rose-100 text-rose-800 border-rose-300'
-                        : 'bg-amber-100 text-amber-800 border-amber-300'
-                    }`}
-                  >
-                    {group.globalVote}
-                  </span>
-                </div>
-
-                {/* 3. Décompte interne des voix (Pour / Contre / Abstention) */}
-                <div className="flex items-center gap-2 text-xs font-medium text-gray-600 min-w-[200px] justify-end">
-                  <span className="text-emerald-700 font-bold">{group.votes.pour} pour</span>
-                  <span className="text-gray-300">•</span>
-                  <span className="text-rose-700 font-bold">{group.votes.contre} contre</span>
-                  <span className="text-gray-300">•</span>
-                  <span className="text-amber-700 font-bold">{group.votes.abstention} abst.</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
   init();
 </script>

@@ -1,3 +1,5 @@
+import json
+import os
 from datetime import datetime
 
 # Table de correspondance complète pour la 17e législature (post-dissolution 2024)
@@ -10,7 +12,7 @@ GROUPS_MAPPING = {
     "PO845439": {"name": "Écologiste et Social", "shortName": "ECO", "bg": "#00a651", "text": "#ffffff"},
     "PO845454": {"name": "Socialistes et apparentés", "shortName": "SOC", "bg": "#e40046", "text": "#ffffff"},
     "PO845470": {"name": "Horizons & Indépendants", "shortName": "HOR", "bg": "#00a896", "text": "#ffffff"},
-    "PO845485": {"name": "Droite Républicaine", "shortName": "DR", "bg": "#0055a5", "text": "#ffffff"},
+    "PO84585": {"name": "Droite Républicaine", "shortName": "DR", "bg": "#0055a5", "text": "#ffffff"},
     "PO845514": {"name": "Union des Droites pour la République", "shortName": "UDR", "bg": "#1e3799", "text": "#ffffff"},
     "PO872880": {"name": "Les Démocrates", "shortName": "DEM", "bg": "#e67e22", "text": "#ffffff"},
     "PO840056": {"name": "Non-inscrits", "shortName": "NI", "bg": "#718093", "text": "#ffffff"}
@@ -36,7 +38,6 @@ def process_votes_data(raw_scrutins_list):
     processed_votes = []
 
     for scrutin in raw_scrutins_list:
-        # Vérification de la date ou de la législature (17e législature = post-dissolution)
         date_scrutin = scrutin.get('dateScrutin', '')
         legislature = str(scrutin.get('legislature', ''))
 
@@ -48,11 +49,9 @@ def process_votes_data(raw_scrutins_list):
         if not is_post_dissolution:
             continue
 
-        # Formatage des groupes au sein du scrutin
         groups_detail = []
         raw_groups = scrutin.get('ventilationVotes', {}).get('organes', [])
         
-        # Si la structure est sous forme de dictionnaire ou liste
         if isinstance(raw_groups, dict):
             raw_groups = [raw_groups]
 
@@ -60,14 +59,12 @@ def process_votes_data(raw_scrutins_list):
             group_id = grp.get('organeRef', '')
             meta = get_group_metadata(group_id, grp.get('libelle', ''))
             
-            # Décompte des voix
             votes_count = {
                 'pour': int(grp.get('pour', 0)),
                 'contre': int(grp.get('contre', 0)),
                 'abstention': int(grp.get('nonVotants', 0)) + int(grp.get('abstentions', 0))
             }
 
-            # Détermination de la position majoritaire du groupe
             if votes_count['pour'] >= votes_count['contre'] and votes_count['pour'] >= votes_count['abstention']:
                 global_vote = "POUR"
             elif votes_count['contre'] >= votes_count['pour'] and votes_count['contre'] >= votes_count['abstention']:
@@ -85,19 +82,32 @@ def process_votes_data(raw_scrutins_list):
                 "votes": votes_count
             })
 
+        num_scrutin = str(scrutin.get('numero', '0'))
+
         processed_votes.append({
-            "numero": scrutin.get('numero', '0'),
+            "numero": num_scrutin,
             "titre": scrutin.get('titre', 'Scrutin sans titre'),
             "date": date_scrutin,
+            "url": f"https://www.assemblee-nationale.fr/dyn/17/scrutins/{num_scrutin}",
             "groups": groups_detail
         })
 
-    # Tri du plus récent au plus ancien (numéro de scrutin décroissant)
     processed_votes.sort(
         key=lambda x: int(x['numero']) if str(x['numero']).isdigit() else 0, 
         reverse=True
     )
 
-    # Récupération de l'ensemble des résultats sans bridage
-    final_data = processed_votes
-    return final_data
+    return processed_votes
+
+if __name__ == "__main__":
+    os.makedirs("data", exist_ok=True)
+    raw_data = []
+    
+    if os.path.exists("data/raw_scrutins.json"):
+        with open("data/raw_scrutins.json", "r", encoding="utf-8") as f:
+            raw_data = json.load(f)
+            
+    output_data = process_votes_data(raw_data)
+    
+    with open("data/votes.json", "w", encoding="utf-8") as f:
+        json.dump(output_data, f, ensure_ascii=False, indent=2)
