@@ -1,10 +1,11 @@
 import io
 import json
 import os
+import ssl
 import urllib.request
 import zipfile
 
-# Table de correspondance officielle pour la 17e législature (post-dissolution 2024)
+# Table de correspondance officielle pour la 17e législature (2024-présent)
 GROUPS_MAPPING = {
     "PO845401": {
         "name": "La France insoumise - NFP",
@@ -84,11 +85,11 @@ DISSOLUTION_DATE = "2024-06-09"
 ZIP_URL = "https://data.assemblee-nationale.fr/static/openData/repository/17/loi/scrutins/Scrutins.json.zip"
 
 
-def get_group_metadata(group_id, raw_name=""):
+def get_group_metadata(group_id):
   if group_id in GROUPS_MAPPING:
     return GROUPS_MAPPING[group_id]
   return {
-      "name": raw_name if raw_name else f"Groupe {group_id}",
+      "name": f"Groupe {group_id}",
       "shortName": "AUTRE",
       "bg": "#6c757d",
       "text": "#ffffff",
@@ -96,34 +97,40 @@ def get_group_metadata(group_id, raw_name=""):
 
 
 def extract_raw_groups(scrutin):
-  """Extrait la liste des groupes parlementaires du JSON d'un scrutin."""
-  ventilation = scrutin.get("ventilationVotes", {})
-  if not ventilation:
+  """Extrait la liste des groupes selon l'arborescence réelle des fichiers Open Data."""
+  if not isinstance(scrutin, dict):
     return []
 
-  organe_root = ventilation.get("organe", {})
-  if isinstance(organe_root, dict):
-    organes_container = organe_root.get("organes", {})
-    if isinstance(organes_container, dict):
-      organes = organes_container.get("organe", [])
-      if isinstance(organes, list):
-        return organes
-      elif isinstance(organes, dict):
-        return [organes]
+  ventilation = scrutin.get("ventilationVotes")
+  if not isinstance(ventilation, dict):
+    return []
 
-  raw_organes = ventilation.get("organes", [])
-  if isinstance(raw_organes, list):
-    return raw_organes
-  elif isinstance(raw_organes, dict):
-    return [raw_organes]
+  organe_root = ventilation.get("organe")
+  if not isinstance(organe_root, dict):
+    return []
+
+  groupes_container = organe_root.get("groupes")
+  if not isinstance(groupes_container, dict):
+    return []
+
+  groupes = groupes_container.get("groupe", [])
+  if isinstance(groupes, dict):
+    return [groupes]
+  elif isinstance(groupes, list):
+    return groupes
 
   return []
 
 
-def process_single_scrutin(scrutin):
-  """Traite un fichier JSON de scrutin individuel."""
-  if "scrutin" in scrutin and isinstance(scrutin["scrutin"], dict):
-    scrutin = scrutin["scrutin"]
+def process_single_scrutin(data_obj):
+  # Unpack racine
+  scrutin = (
+      data_obj.get("scrutin")
+      if isinstance(data_obj, dict) and "scrutin" in data_obj
+      else data_obj
+  )
+  if not isinstance(scrutin, dict):
+    return None
 
   date_scrutin = str(scrutin.get("dateScrutin", ""))
   legislature = str(scrutin.get("legislature", ""))
@@ -135,49 +142,40 @@ def process_single_scrutin(scrutin):
     return None
 
   raw_groups = extract_raw_groups(scrutin)
+  if not raw_groups:
+    return None
+
   groups_detail = []
 
   for grp in raw_groups:
-    group_id = grp.get("organeRef", "")
-    libelle = grp.get("libelle", "")
-    meta = get_group_metadata(group_id, libelle)
+    if not isinstance(grp, dict):
+      continue
 
-    vote_obj = grp.get("vote", {})
-    decompte = (
-        vote_obj.get("decompteVoix", {})
-        if isinstance(vote_obj, dict)
-        else {}
-    )
+    group_id = str(grp.get("organeRef", ""))
+    meta = get_group_metadata(group_id)
 
-    pour = int(
-        grp.get("pour")
-        or decompte.get("pour")
-        or (vote_obj.get("decomptePour") if isinstance(vote_obj, dict) else 0)
-        or 0
-    )
-    contre = int(
-        grp.get("contre")
-        or decompte.get("contre")
-        or (
-            vote_obj.get("decompteContre") if isinstance(vote_obj, dict) else 0
-        )
-        or 0
-    )
-    abstention = int(
-        grp.get("nonVotants") or decompte.get("nonVotants") or 0
-    ) + int(grp.get("abstentions") or decompte.get("abstentions") or 0)
+    vote_obj = grp.get("vote")
+    if not isinstance(vote_obj, dict):
+      vote_obj = {}
 
-    pos_maj = (
-        vote_obj.get("positionMajoritaire", "")
-        if isinstance(vote_obj, dict)
-        else ""
-    )
-    if pos_maj:
-      global_vote = pos_maj.upper()
+    decompte = vote_obj.get("decompteVoix")
+    if not isinstance(decompte, dict):
+      decompte = {}
+
+    pour = int(decompte.get("pour") or 0)
+    contre = int(decompte.get("contre") or 0)
+    abstentions = int(decompte.get("abstentions") or 0)
+    non_votants = int(decompte.get("nonVotants") or 0)
+    abstention_total = abstentions + non_votants
+
+    pos_maj = str(vote_obj.get("positionMajoritaire", "")).strip().upper()
+
+    if pos_maj in ["POUR", "CONTRE", "ABSTENTION"]:
+      global_vote = pos_maj
     else:
-      if pour >= contre and pour >= abstention:
+      if pour >= contre and pour >= abstention_total:
         global_vote = "POUR"
-      elif contre >= pour and contre >= abstention:
+      elif contre >= pour and contre >= abstention_total:
         global_vote = "CONTRE"
       else:
         global_vote = "ABSTENTION"
@@ -189,11 +187,15 @@ def process_single_scrutin(scrutin):
         "bg": meta["bg"],
         "text": meta["text"],
         "globalVote": global_vote,
-        "votes": {"pour": pour, "contre": contre, "abstention": abstention},
+        "votes": {
+            "pour": pour,
+            "contre": contre,
+            "abstention": abstention_total,
+        },
     })
 
   num_scrutin = str(scrutin.get("numero", "0"))
-  titre = scrutin.get("titre") or "Scrutin sans titre"
+  titre = scrutin.get("titre") or scrutin.get("objet") or "Scrutin sans titre"
 
   return {
       "numero": num_scrutin,
@@ -204,52 +206,59 @@ def process_single_scrutin(scrutin):
   }
 
 
-def fetch_from_open_data():
-  """Télécharge l'archive officielle depuis data.assemblee-nationale.fr"""
-  print(f"Téléchargement depuis {ZIP_URL}...")
-  req = urllib.request.Request(ZIP_URL, headers={"User-Agent": "Mozilla/5.0"})
-
-  with urllib.request.urlopen(req, timeout=60) as response:
-    zip_data = response.read()
-
-  scrutins_list = []
-  with zipfile.ZipFile(io.BytesIO(zip_data)) as z:
-    for filename in z.namelist():
-      if filename.endswith(".json"):
-        with z.open(filename) as f:
-          try:
-            data = json.load(f)
-            processed = process_single_scrutin(data)
-            if processed and processed.get("groups"):
-              scrutins_list.append(processed)
-          except Exception:
-            continue
-  return scrutins_list
-
-
 def main():
   os.makedirs("data", exist_ok=True)
   processed_votes = []
 
-  try:
-    processed_votes = fetch_from_open_data()
-    print(
-        f"Succès : {len(processed_votes)} scrutins récupérés via l'Open Data."
-    )
-  except Exception as e:
-    print(f"Erreur lors du téléchargement : {e}")
+  print(f"Téléchargement de l'archive Open Data...")
 
-  # Tri du plus récent au plus ancien
-  processed_votes.sort(
-      key=lambda x: int(x["numero"]) if str(x["numero"]).isdigit() else 0,
-      reverse=True,
+  # Contournement des certificats SSL stricts si nécessaire
+  ssl_ctx = ssl.create_default_context()
+  ssl_ctx.check_hostname = False
+  ssl_ctx.verify_mode = ssl.CERT_NONE
+
+  req = urllib.request.Request(
+      ZIP_URL,
+      headers={
+          "User-Agent": (
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+          )
+      },
   )
 
-  output_path = "data/votes.json"
-  with open(output_path, "w", encoding="utf-8") as f:
-    json.dump(processed_votes, f, ensure_ascii=False, indent=2)
+  try:
+    with urllib.request.urlopen(req, context=ssl_ctx, timeout=60) as resp:
+      zip_bytes = resp.read()
 
-  print(f"Fichier sauvegardé dans {output_path}")
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as z:
+      for name in z.namelist():
+        if name.endswith(".json"):
+          with z.open(name) as f:
+            try:
+              data = json.load(f)
+              res = process_single_scrutin(data)
+              if res and res.get("groups"):
+                processed_votes.append(res)
+            except Exception:
+              continue
+
+    # Tri du plus récent au plus ancien
+    processed_votes.sort(
+        key=lambda x: int(x["numero"]) if str(x["numero"]).isdigit() else 0,
+        reverse=True,
+    )
+
+    output_file = "data/votes.json"
+    with open(output_file, "w", encoding="utf-8") as f:
+      json.dump(processed_votes, f, ensure_ascii=False, indent=2)
+
+    print(
+        f"✅ Succès : {len(processed_votes)} scrutins extraits et enregistrés"
+        f" dans {output_file}"
+    )
+
+  except Exception as e:
+    print(f"❌ Erreur critique pendant l'extraction : {e}")
 
 
 if __name__ == "__main__":
