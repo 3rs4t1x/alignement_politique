@@ -303,6 +303,8 @@
       }
     } catch (e) {
       document.getElementById('vote-title').innerText = "Erreur lors du chargement des scrutins.";
+      document.getElementById('vote-actions').style.display = 'none';
+      document.getElementById('btn-ai').style.display = 'none';
     }
   }
 
@@ -376,7 +378,8 @@
     
     const userBadge = document.getElementById('user-vote-badge');
     userBadge.innerText = userChoice;
-    userBadge.className = `badge badge-${userChoice.toLowerCase().substring(0,4)}`;
+    const badgeClassMap = { POUR: 'badge-pour', CONTRE: 'badge-contre', ABSTENTION: 'badge-abst' };
+    userBadge.className = `badge ${badgeClassMap[userChoice] || ''}`;
     document.getElementById('parties-breakdown').innerHTML = breakdownHtml;
 
     updateGlobalScoreboardUI();

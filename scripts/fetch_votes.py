@@ -2,6 +2,8 @@ import io
 import json
 import os
 import ssl
+import time
+import urllib.error
 import urllib.request
 import zipfile
 
@@ -10,6 +12,16 @@ ORGANES_ZIP_URL = "https://data.assemblee-nationale.fr/static/openData/repositor
 
 DISSOLUTION_DATE = "2024-06-09"
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+# --- Réglages Gemini ---------------------------------------------------
+# NB : si Google déprécie ce modèle, la liste à jour est ici :
+# https://ai.google.dev/gemini-api/docs/deprecations
+GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MAX_RETRIES = 3          # tentatives en cas de dépassement de quota (HTTP 429)
+GEMINI_RETRY_DELAY = 20         # secondes d'attente avant de retenter après un 429
+GEMINI_CALL_DELAY = 4.5         # secondes entre deux appels réussis, pour rester sous le quota gratuit (~10-15 req/min)
+MAX_NEW_SUMMARIES_PER_RUN = 200 # évite d'épuiser le quota gratuit journalier (~500 req/jour) en un seul run
+# -------------------------------------------------------------------------
 
 COLOR_PALETTE = {
     "LFI-NFP": {"bg": "#cc0000", "text": "#ffffff"},
@@ -28,19 +40,30 @@ COLOR_PALETTE = {
     "NI": {"bg": "#718093", "text": "#ffffff"}
 }
 
-def get_ssl_context():
+def get_insecure_ssl_context():
+    """Contexte SSL sans vérification de certificat.
+
+    Utilisé UNIQUEMENT pour data.assemblee-nationale.fr, dont la chaîne de
+    certificats est historiquement capricieuse. Ne jamais utiliser ce
+    contexte pour un appel transportant une clé API (voir generate_ai_summary),
+    car cela expose la clé à une attaque de type "man-in-the-middle".
+    """
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
     return ctx
 
 def generate_ai_summary(titre):
-    """Interroge Gemini pour générer une synthèse neutre et structurée du texte."""
+    """Interroge Gemini pour générer une synthèse neutre et structurée du texte.
+
+    Retourne None en cas d'échec définitif (clé invalide, texte non parsable, etc.)
+    et réessaie automatiquement en cas de dépassement de quota (HTTP 429).
+    """
     if not GEMINI_API_KEY:
         return None
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
-    
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+
     prompt = f"""
 Tu es un assistant parlementaire rigoureusement neutre et pédagogique.
 Analyse cet intitulé de scrutin de l'Assemblée nationale française :
@@ -57,23 +80,54 @@ Fournis une explication impartiale et accessible au grand public sous forme d'un
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
-            "response_mime_type": "application/json"
+            "response_mime_type": "application/json",
+            "temperature": 0.3,
+            "maxOutputTokens": 1024
         }
     }
 
-    try:
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"}
-        )
-        with urllib.request.urlopen(req, context=get_ssl_context(), timeout=15) as resp:
-            res_data = json.loads(resp.read().decode("utf-8"))
-            text_response = res_data["candidates"][0]["content"]["parts"][0]["text"]
-            return json.loads(text_response)
-    except Exception as e:
-        print(f"⚠️ Erreur génération Gemini pour '{titre[:30]}...': {e}")
-        return None
+    for attempt in range(1, GEMINI_MAX_RETRIES + 1):
+        try:
+            req = urllib.request.Request(
+                url,
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    # Méthode recommandée par Google (ai.google.dev/gemini-api/docs/api-key) :
+                    # l'en-tête x-goog-api-key est préféré à l'ancien paramètre d'URL "?key=...",
+                    # qui expose la clé dans les logs serveur et les outils intermédiaires.
+                    "x-goog-api-key": GEMINI_API_KEY,
+                }
+            )
+            # Contexte SSL par défaut (vérifié) : on n'utilise JAMAIS le contexte
+            # non sécurisé ici, puisque la requête transporte la clé API.
+            with urllib.request.urlopen(req, context=ssl.create_default_context(), timeout=20) as resp:
+                res_data = json.loads(resp.read().decode("utf-8"))
+                text_response = res_data["candidates"][0]["content"]["parts"][0]["text"]
+                return json.loads(text_response)
+
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                print(f"⏳ Quota Gemini atteint pour '{titre[:30]}...' (tentative {attempt}/{GEMINI_MAX_RETRIES}), nouvel essai dans {GEMINI_RETRY_DELAY}s")
+                time.sleep(GEMINI_RETRY_DELAY)
+                continue
+            elif e.code in (401, 403):
+                # Depuis le 19 juin 2026, Google refuse les clés Gemini qui n'ont pas
+                # de restriction d'API configurée. Si cette erreur apparaît alors que
+                # la clé fonctionnait auparavant, il faut la restreindre à
+                # "Generative Language API" dans Google Cloud Console > Identifiants,
+                # ou en générer une nouvelle depuis Google AI Studio.
+                print(f"❌ Clé API Gemini refusée (HTTP {e.code}) pour '{titre[:30]}...' : {e}")
+                return None
+            else:
+                print(f"⚠️ Erreur HTTP Gemini ({e.code}) pour '{titre[:30]}...': {e}")
+                return None
+        except Exception as e:
+            print(f"⚠️ Erreur génération Gemini pour '{titre[:30]}...': {e}")
+            return None
+
+    print(f"❌ Abandon pour '{titre[:30]}...' après {GEMINI_MAX_RETRIES} tentatives (quota toujours dépassé).")
+    return None
 
 def fetch_official_organs():
     print("Récupération des groupes parlementaires officiels...")
@@ -81,7 +135,7 @@ def fetch_official_organs():
     req = urllib.request.Request(ORGANES_ZIP_URL, headers={"User-Agent": "Mozilla/5.0"})
 
     try:
-        with urllib.request.urlopen(req, context=get_ssl_context(), timeout=60) as resp:
+        with urllib.request.urlopen(req, context=get_insecure_ssl_context(), timeout=60) as resp:
             zip_bytes = resp.read()
 
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as z:
@@ -122,7 +176,10 @@ def extract_raw_groups(scrutin):
     groupes = groupes_container.get("groupe", [])
     return [groupes] if isinstance(groupes, dict) else (groupes if isinstance(groupes, list) else [])
 
-def process_single_scrutin(data_obj, organs_map, existing_cache):
+def process_single_scrutin(data_obj, organs_map, existing_cache, allow_ai=True):
+    """Traite un scrutin. Retourne un dict avec une clé interne '_new_ai_call'
+    indiquant si un appel Gemini a réellement été effectué (utile pour le
+    throttling et le comptage de quota côté appelant)."""
     scrutin = data_obj.get("scrutin") if isinstance(data_obj, dict) and "scrutin" in data_obj else data_obj
     if not isinstance(scrutin, dict): return None
 
@@ -171,10 +228,13 @@ def process_single_scrutin(data_obj, organs_map, existing_cache):
     titre = scrutin.get("titre") or scrutin.get("objet") or "Scrutin sans titre"
 
     # Récupération de l'explication IA (depuis le cache ou génération)
-    ai_summary = existing_cache.get(num_scrutin, {}).get("aiSummary")
-    if not ai_summary and GEMINI_API_KEY:
+    cached_entry = existing_cache.get(num_scrutin, {})
+    ai_summary = cached_entry.get("aiSummary")
+    made_new_call = False
+    if not ai_summary and GEMINI_API_KEY and allow_ai:
         print(f"🤖 Génération de la synthèse Gemini pour le scrutin n°{num_scrutin}...")
         ai_summary = generate_ai_summary(titre)
+        made_new_call = True
 
     return {
         "numero": num_scrutin,
@@ -182,13 +242,14 @@ def process_single_scrutin(data_obj, organs_map, existing_cache):
         "date": date_scrutin,
         "url": f"https://www.assemblee-nationale.fr/dyn/17/scrutins/{num_scrutin}",
         "aiSummary": ai_summary,
-        "groups": groups_detail
+        "groups": groups_detail,
+        "_new_ai_call": made_new_call
     }
 
 def main():
     os.makedirs("data", exist_ok=True)
     output_file = "data/votes.json"
-    
+
     # Chargement du cache existant pour économiser les appels API Gemini
     existing_cache = {}
     if os.path.exists(output_file):
@@ -201,38 +262,60 @@ def main():
 
     organs_map = fetch_official_organs()
     processed_votes = []
+    new_ai_calls = 0
+
+    def save_progress():
+        """Sauvegarde immédiatement ce qui a été traité jusqu'ici.
+        Appelée régulièrement et systématiquement en cas d'erreur, pour ne
+        jamais perdre les synthèses Gemini déjà générées (et donc déjà
+        payées en quota) si le run est interrompu en cours de route."""
+        if not processed_votes:
+            return
+        sorted_votes = sorted(
+            processed_votes,
+            key=lambda x: int(x["numero"]) if str(x["numero"]).isdigit() else 0,
+            reverse=True
+        )
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump(sorted_votes, f, ensure_ascii=False, indent=2)
 
     print("Téléchargement des scrutins...")
     req = urllib.request.Request(SCRUTINS_ZIP_URL, headers={"User-Agent": "Mozilla/5.0"})
 
     try:
-        with urllib.request.urlopen(req, context=get_ssl_context(), timeout=60) as resp:
+        with urllib.request.urlopen(req, context=get_insecure_ssl_context(), timeout=60) as resp:
             zip_bytes = resp.read()
 
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as z:
-            for name in z.namelist():
-                if name.endswith(".json"):
-                    with z.open(name) as f:
-                        try:
-                            data = json.load(f)
-                            res = process_single_scrutin(data, organs_map, existing_cache)
-                            if res and res.get("groups"):
-                                processed_votes.append(res)
-                        except Exception:
-                            continue
+            names = [n for n in z.namelist() if n.endswith(".json")]
 
-        processed_votes.sort(
-            key=lambda x: int(x["numero"]) if str(x["numero"]).isdigit() else 0,
-            reverse=True
-        )
+            for i, name in enumerate(names):
+                with z.open(name) as f:
+                    try:
+                        data = json.load(f)
+                        allow_ai = bool(GEMINI_API_KEY) and new_ai_calls < MAX_NEW_SUMMARIES_PER_RUN
+                        res = process_single_scrutin(data, organs_map, existing_cache, allow_ai=allow_ai)
+                        if res and res.get("groups"):
+                            if res.pop("_new_ai_call", False):
+                                new_ai_calls += 1
+                                time.sleep(GEMINI_CALL_DELAY)  # respecte le quota du tier gratuit
+                            processed_votes.append(res)
+                    except Exception as e:
+                        print(f"⚠️ Scrutin ignoré ({name}): {e}")
+                        continue
 
-        with open(output_file, "w", encoding="utf-8") as f:
-            json.dump(processed_votes, f, ensure_ascii=False, indent=2)
+                # Checkpoint : on sauvegarde régulièrement pour ne rien perdre
+                # si le job est interrompu (timeout GitHub Actions, coupure réseau, etc.)
+                if (i + 1) % 50 == 0:
+                    save_progress()
 
-        print(f"✅ Succès : {len(processed_votes)} scrutins enregistrés dans {output_file}")
+        save_progress()
+        print(f"✅ Succès : {len(processed_votes)} scrutins enregistrés dans {output_file} "
+              f"({new_ai_calls} nouvelle(s) synthèse(s) Gemini générée(s))")
 
     except Exception as e:
         print(f"❌ Erreur critique : {e}")
+        save_progress()  # on conserve malgré tout tout ce qui a pu être traité avant l'erreur
 
 if __name__ == "__main__":
     main()

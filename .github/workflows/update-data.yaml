@@ -11,6 +11,7 @@ permissions:
 jobs:
   update-data:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Récupérer le code
         uses: actions/checkout@v4
@@ -21,6 +22,12 @@ jobs:
           python-version: '3.12'
 
       - name: Télécharger, analyser et résumer les scrutins
+        # Important : depuis le 19/06/2026, Google refuse les clés Gemini qui n'ont
+        # pas de restriction d'API configurée (Google Cloud Console > Identifiants >
+        # Restrictions de clé API > "Generative Language API" uniquement).
+        # Si les résumés IA cessent soudainement de se générer, c'est la cause la
+        # plus probable — vérifier aussi que le secret GEMINI_API_KEY existe bien
+        # dans Settings > Secrets and variables > Actions de ce dépôt.
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python scripts/fetch_votes.py
