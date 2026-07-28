@@ -54,7 +54,6 @@
       margin: 0;
     }
 
-    /* Grille Responsive principale (Main + Sidebar) */
     .app-layout {
       display: grid;
       grid-template-columns: 1fr;
@@ -122,7 +121,6 @@
     }
     .link-official:hover { text-decoration: underline; }
 
-    /* Boutons de vote */
     .actions-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -174,7 +172,23 @@
     }
     .btn-next:hover { background-color: var(--primary-hover); }
 
-    /* Grille ultra-compacte des votes par groupe politique */
+    .btn-reset {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 0.4rem;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-reset:hover {
+      background: #F1F5F9;
+      color: var(--contre);
+      border-color: var(--contre);
+    }
+
     .parties-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
@@ -227,7 +241,6 @@
       flex-shrink: 0;
     }
 
-    /* Side-cards de l'alignement politique global */
     .scores-list {
       display: flex;
       flex-direction: column;
@@ -304,7 +317,7 @@
   </header>
 
   <div class="app-layout">
-    <!-- Colonne Principale (Scrutins) -->
+    <!-- Colonne Principale -->
     <main>
       <div id="game-card" class="card">
         <div class="meta-bar">
@@ -341,10 +354,13 @@
       </div>
     </main>
 
-    <!-- Sidebar : Alignement Politique Global -->
+    <!-- Sidebar : Alignement Politique -->
     <aside class="sidebar">
       <div class="card">
-        <h2 style="font-size: 1.1rem; margin: 0 0 0.25rem 0;">📊 Alignement Politique</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+          <h2 style="font-size: 1.1rem; margin: 0;">📊 Alignement Politique</h2>
+          <button class="btn-reset" onclick="resetScores()" title="Réinitialiser les résultats">Réinitialiser 🔄</button>
+        </div>
         <p style="color: var(--text-muted); margin: 0 0 0.75rem 0; font-size: 0.825rem;">
           Calculé selon vos votes lors de cette session.
         </p>
@@ -362,6 +378,13 @@
   let votesData = [];
   let currentIndex = 0;
 
+  function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+  }
+
   function formatTitle(text) {
     if (!text) return "";
     let clean = text.trim();
@@ -375,13 +398,15 @@
       votesData = await response.json();
       
       if (Array.isArray(votesData) && votesData.length > 0) {
+        // Mélange aléatoire des questions à chaque session
+        shuffleArray(votesData);
         showVote(0);
         updateGlobalScoreboardUI();
       } else {
         document.getElementById('vote-title').innerText = "Aucun vote disponible actuellement.";
       }
     } catch (e) {
-      document.getElementById('vote-title').innerText = "Erreur de chargement des votes. Lancez l'action GitHub.";
+      document.getElementById('vote-title').innerText = "Erreur de chargement des votes. Vérifiez les actions GitHub.";
     }
   }
 
@@ -391,7 +416,7 @@
         <div style="text-align: center; padding: 2rem 1rem;">
           <h2>🎉 Fin de la session !</h2>
           <p style="color: var(--text-muted);">Vous avez donné votre position sur l'ensemble des textes.</p>
-          <button class="btn-next" onclick="location.reload()">Recommencer</button>
+          <button class="btn-next" onclick="location.reload()">Recommencer avec un nouvel ordre</button>
         </div>`;
       return;
     }
@@ -407,13 +432,25 @@
     document.getElementById('result-zone').style.display = 'none';
   }
 
+  function isValidGroup(grp) {
+    return grp && 
+           grp.name && 
+           grp.shortName && 
+           grp.name !== "undefined" && 
+           grp.shortName !== "undefined" &&
+           !grp.name.includes("Groupe undefined");
+  }
+
   function submitVote(userChoice) {
     const current = votesData[currentIndex];
     let scores = JSON.parse(localStorage.getItem('political_scores') || '{}');
     let totalVotes = parseInt(localStorage.getItem('total_votes') || '0') + 1;
 
     let breakdownHtml = "";
-    const groups = current.groups || [];
+    const rawGroups = current.groups || [];
+    
+    // Filtrage strict des groupes valides
+    const groups = rawGroups.filter(isValidGroup);
 
     groups.forEach(grp => {
       const matched = (userChoice === grp.globalVote);
@@ -465,13 +502,31 @@
     showVote(currentIndex);
   }
 
+  function resetScores() {
+    if (confirm("Voulez-vous vraiment réinitialiser votre alignement politique ?")) {
+      localStorage.removeItem('political_scores');
+      localStorage.removeItem('total_votes');
+      document.getElementById('global-scores').innerHTML = `
+        <p style="color: var(--text-muted); font-style: italic; font-size: 0.825rem; margin: 0;">
+          Votez pour afficher votre proximité avec les partis.
+        </p>`;
+    }
+  }
+
   function updateGlobalScoreboardUI() {
     const scores = JSON.parse(localStorage.getItem('political_scores') || '{}');
     const totalVotes = parseInt(localStorage.getItem('total_votes') || '0');
 
-    if (totalVotes === 0 || Object.keys(scores).length === 0) return;
+    if (totalVotes === 0 || Object.keys(scores).length === 0) {
+      document.getElementById('global-scores').innerHTML = `
+        <p style="color: var(--text-muted); font-style: italic; font-size: 0.825rem; margin: 0;">
+          Votez pour afficher votre proximité avec les partis.
+        </p>`;
+      return;
+    }
 
     const sorted = Object.values(scores)
+      .filter(isValidGroup)
       .map(grp => ({
         ...grp,
         pct: Math.round(((grp.score || 0) / totalVotes) * 100)

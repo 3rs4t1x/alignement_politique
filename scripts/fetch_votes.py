@@ -5,13 +5,12 @@ import ssl
 import urllib.request
 import zipfile
 
-# URLs de l'Open Data officiel de l'Assemblée Nationale (17e législature)
 SCRUTINS_ZIP_URL = "https://data.assemblee-nationale.fr/static/openData/repository/17/loi/scrutins/Scrutins.json.zip"
 ORGANES_ZIP_URL = "https://data.assemblee-nationale.fr/static/openData/repository/17/amo/deputes_actifs_mandats_actifs_organes/AMO10_deputes_actifs_mandats_actifs_organes.json.zip"
 
 DISSOLUTION_DATE = "2024-06-09"
 
-# Palette de couleurs associée aux abréviations connues
+# Palette de couleurs optionnelle basée sur les sigles (couleur par défaut si inconnue)
 COLOR_PALETTE = {
     "LFI-NFP": {"bg": "#cc0000", "text": "#ffffff"},
     "LFI": {"bg": "#cc0000", "text": "#ffffff"},
@@ -36,8 +35,8 @@ def get_ssl_context():
     return ctx
 
 def fetch_official_organs():
-    """Télécharge et extrait dynamiquement les noms officiels des groupes parlementaires."""
-    print("Récupération des noms officiels des groupes parlementaires...")
+    """Télécharge et extrait dynamiquement les organes depuis l'Open Data."""
+    print("Récupération des groupes parlementaires officiels...")
     organs_map = {}
     req = urllib.request.Request(ORGANES_ZIP_URL, headers={"User-Agent": "Mozilla/5.0"})
 
@@ -56,25 +55,31 @@ def fetch_official_organs():
                             uid = organe.get("uid")
 
                             if code_type in ["GP", "NI"] and uid:
-                                libelle = organe.get("libelle", f"Groupe {uid}")
-                                libelle_abrev = organe.get("libelleAbrev") or uid
+                                libelle = organe.get("libelle")
+                                libelle_abrev = organe.get("libelleAbrev")
+
+                                # Validation stricte : exclut tout élément incomplet ou indéfini
+                                if not libelle or not isinstance(libelle, str) or libelle == "undefined":
+                                    continue
                                 
+                                short_name = libelle_abrev if (libelle_abrev and isinstance(libelle_abrev, str) and libelle_abrev != "undefined") else uid
+
                                 colors = COLOR_PALETTE.get(
-                                    libelle_abrev, 
+                                    short_name, 
                                     {"bg": "#475569", "text": "#ffffff"}
                                 )
 
                                 organs_map[uid] = {
-                                    "name": libelle,
-                                    "shortName": libelle_abrev,
+                                    "name": libelle.strip(),
+                                    "shortName": short_name.strip(),
                                     "bg": colors["bg"],
                                     "text": colors["text"]
                                 }
                         except Exception:
                             continue
-        print(f"✅ {len(organs_map)} groupes parlementaires identifiés.")
+        print(f"✅ {len(organs_map)} groupes parlementaires valides chargés.")
     except Exception as e:
-        print(f"⚠️ Impossible de charger les organes officiels ({e}). Mode secours activé.")
+        print(f"⚠️ Impossible de charger le référentiel des organes ({e}).")
 
     return organs_map
 
@@ -126,13 +131,11 @@ def process_single_scrutin(data_obj, organs_map):
 
         group_id = str(grp.get("organeRef", ""))
         
-        # Récupération dynamique depuis l'Open Data ou repli
-        meta = organs_map.get(group_id, {
-            "name": f"Groupe {group_id}",
-            "shortName": group_id,
-            "bg": "#475569",
-            "text": "#ffffff"
-        })
+        # Filtre les groupes non identifiés dans l'Open Data officiel
+        if group_id not in organs_map:
+            continue
+
+        meta = organs_map[group_id]
 
         vote_obj = grp.get("vote") if isinstance(grp.get("vote"), dict) else {}
         decompte = vote_obj.get("decompteVoix") if isinstance(vote_obj.get("decompteVoix"), dict) else {}
@@ -168,6 +171,9 @@ def process_single_scrutin(data_obj, organs_map):
                 "abstention": abstention_total
             }
         })
+
+    if not groups_detail:
+        return None
 
     num_scrutin = str(scrutin.get("numero", "0"))
     titre = scrutin.get("titre") or scrutin.get("objet") or "Scrutin sans titre"
