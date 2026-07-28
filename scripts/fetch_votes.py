@@ -129,6 +129,38 @@ Fournis une explication impartiale et accessible au grand public sous forme d'un
     print(f"❌ Abandon pour '{titre[:30]}...' après {GEMINI_MAX_RETRIES} tentatives (quota toujours dépassé).")
     return None
 
+def test_gemini_connection():
+    """Vérifie la config Gemini AVANT de traiter les centaines de scrutins,
+    et affiche un diagnostic explicite et bien visible en tête des logs.
+    Sans ce test, un problème de clé se traduit par 0 résumé généré et
+    AUCUN message d'erreur nulle part (silence total) — c'est ce test qui
+    permet de comprendre pourquoi."""
+    print("=" * 60)
+    if not GEMINI_API_KEY:
+        print("⚠️  AUCUNE CLÉ GEMINI DÉTECTÉE.")
+        print("    La variable d'environnement GEMINI_API_KEY est vide ou absente.")
+        print("    → Vérifie que le secret existe, nommé EXACTEMENT 'GEMINI_API_KEY',")
+        print("      dans Settings > Secrets and variables > Actions > Repository secrets")
+        print("      (pas 'Environment secrets', pas 'Codespaces').")
+        print("    → Vérifie aussi que le workflow le référence bien via")
+        print("      env: GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} sur l'étape qui lance ce script.")
+        print("=" * 60)
+        return False
+
+    print(f"🔑 Clé Gemini détectée ({len(GEMINI_API_KEY)} caractères). Test de connexion à l'API...")
+    result = generate_ai_summary("Test de connexion à l'API Gemini")
+    if result:
+        print("✅ Connexion Gemini opérationnelle — la génération de résumés est activée pour ce run.")
+        print("=" * 60)
+        return True
+
+    print("❌ Le test de connexion Gemini a ÉCHOUÉ (voir le message d'erreur juste au-dessus).")
+    print("    Causes les plus fréquentes : clé invalide/expirée, clé sans restriction d'API")
+    print("    refusée par Google depuis le 19/06/2026, ou quota déjà épuisé.")
+    print("    Aucun résumé ne sera généré pour ce run.")
+    print("=" * 60)
+    return False
+
 def fetch_official_organs():
     print("Récupération des groupes parlementaires officiels...")
     organs_map = {}
@@ -260,6 +292,8 @@ def main():
         except Exception:
             pass
 
+    gemini_ok = test_gemini_connection()
+
     organs_map = fetch_official_organs()
     processed_votes = []
     new_ai_calls = 0
@@ -293,7 +327,7 @@ def main():
                 with z.open(name) as f:
                     try:
                         data = json.load(f)
-                        allow_ai = bool(GEMINI_API_KEY) and new_ai_calls < MAX_NEW_SUMMARIES_PER_RUN
+                        allow_ai = gemini_ok and new_ai_calls < MAX_NEW_SUMMARIES_PER_RUN
                         res = process_single_scrutin(data, organs_map, existing_cache, allow_ai=allow_ai)
                         if res and res.get("groups"):
                             if res.pop("_new_ai_call", False):
@@ -310,8 +344,11 @@ def main():
                     save_progress()
 
         save_progress()
+        with_summary = sum(1 for v in processed_votes if v.get("aiSummary"))
         print(f"✅ Succès : {len(processed_votes)} scrutins enregistrés dans {output_file} "
-              f"({new_ai_calls} nouvelle(s) synthèse(s) Gemini générée(s))")
+              f"({new_ai_calls} nouvelle(s) synthèse(s) Gemini générée(s) ce run)")
+        print(f"📊 Bilan résumés IA : {with_summary}/{len(processed_votes)} scrutins ont un résumé "
+              f"({'clé Gemini OK' if gemini_ok else 'clé Gemini INDISPONIBLE — voir diagnostic ci-dessus'})")
 
     except Exception as e:
         print(f"❌ Erreur critique : {e}")
