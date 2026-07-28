@@ -12,14 +12,15 @@
       --text-muted: #64748B;
       --primary: #2563EB;
       --primary-hover: #1D4ED8;
+      --gemini-purple: #7C3AED;
+      --gemini-bg: #F5F3FF;
       --pour: #16A34A;
       --pour-bg: #DCFCE7;
       --contre: #DC2626;
       --contre-bg: #FEE2E2;
       --abst: #475569;
-      --abst-bg: #F1F5F9;
       --border: #E2E8F0;
-      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
     * { box-sizing: border-box; }
@@ -33,42 +34,16 @@
       line-height: 1.5;
     }
 
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
+    .container { max-width: 1200px; margin: 0 auto; }
 
-    header {
-      text-align: center;
-      margin-bottom: 1.75rem;
-    }
-    header h1 {
-      font-size: 2.2rem;
-      font-weight: 800;
-      margin: 0 0 0.4rem 0;
-      letter-spacing: -0.02em;
-    }
-    header p {
-      color: var(--text-muted);
-      font-size: 1.05rem;
-      margin: 0;
-    }
+    header { text-align: center; margin-bottom: 1.75rem; }
+    header h1 { font-size: 2.2rem; font-weight: 800; margin: 0 0 0.4rem 0; letter-spacing: -0.02em; }
+    header p { color: var(--text-muted); font-size: 1.05rem; margin: 0; }
 
-    .app-layout {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
-    }
-
+    .app-layout { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
     @media (min-width: 900px) {
-      .app-layout {
-        grid-template-columns: 1fr 360px;
-        align-items: start;
-      }
-      .sidebar {
-        position: sticky;
-        top: 1.5rem;
-      }
+      .app-layout { grid-template-columns: 1fr 360px; align-items: start; }
+      .sidebar { position: sticky; top: 1.5rem; }
     }
 
     .card {
@@ -100,36 +75,64 @@
     .badge-type { background-color: #EFF6FF; color: var(--primary); }
     .badge-pour { background-color: var(--pour-bg); color: #14532D; }
     .badge-contre { background-color: var(--contre-bg); color: #7F1D1D; }
-    .badge-abst { background-color: var(--abst-bg); color: #1E293B; }
+    .badge-abst { background-color: #F1F5F9; color: #1E293B; }
 
-    .vote-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin: 0 0 0.85rem 0;
-      line-height: 1.4;
+    .vote-title { font-size: 1.25rem; font-weight: 700; margin: 0 0 0.85rem 0; line-height: 1.4; }
+
+    .links-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
     }
 
     .link-official {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
       color: var(--primary);
       text-decoration: none;
       font-weight: 600;
-      font-size: 0.875rem;
-      margin-bottom: 1.25rem;
+      font-size: 0.85rem;
     }
     .link-official:hover { text-decoration: underline; }
 
-    .actions-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.75rem;
+    .btn-ai-toggle {
+      background-color: var(--gemini-bg);
+      color: var(--gemini-purple);
+      border: 1px solid #DDD6FE;
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.5rem;
+      font-weight: 700;
+      font-size: 0.825rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.15s;
     }
+    .btn-ai-toggle:hover { background-color: #EDE9FE; }
 
-    @media (max-width: 500px) {
-      .actions-grid { grid-template-columns: 1fr; }
+    /* Box de Résumé IA */
+    .ai-box {
+      background: var(--gemini-bg);
+      border: 1px solid #DDD6FE;
+      border-radius: 0.65rem;
+      padding: 1rem;
+      margin-bottom: 1.25rem;
+      display: none;
     }
+    .ai-box h4 { margin: 0 0 0.4rem 0; color: var(--gemini-purple); font-size: 0.95rem; font-weight: 800; }
+    .ai-box p { margin: 0 0 0.75rem 0; font-size: 0.875rem; color: #3B0764; line-height: 1.4; }
+    
+    .ai-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    @media (max-width: 600px) { .ai-grid { grid-template-columns: 1fr; } }
+
+    .ai-col { background: white; padding: 0.65rem 0.85rem; border-radius: 0.5rem; border: 1px solid #E9D5FF; }
+    .ai-col-title { font-size: 0.775rem; font-weight: 800; text-transform: uppercase; margin-bottom: 0.35rem; }
+    .ai-col ul { margin: 0; padding-left: 1.1rem; font-size: 0.825rem; color: #4C1D95; }
+    .ai-col li { margin-bottom: 0.25rem; }
+
+    .actions-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+    @media (max-width: 500px) { .actions-grid { grid-template-columns: 1fr; } }
 
     .btn-vote {
       border: none;
@@ -142,7 +145,6 @@
       transition: transform 0.1s, opacity 0.15s;
     }
     .btn-vote:hover { transform: translateY(-2px); opacity: 0.95; }
-
     .btn-pour { background-color: var(--pour); }
     .btn-contre { background-color: var(--contre); }
     .btn-abst { background-color: var(--abst); }
@@ -156,7 +158,6 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.75rem;
     }
 
     .btn-next {
@@ -168,34 +169,9 @@
       font-weight: 700;
       font-size: 0.9rem;
       cursor: pointer;
-      transition: background-color 0.15s;
-    }
-    .btn-next:hover { background-color: var(--primary-hover); }
-
-    .btn-reset {
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 0.4rem;
-      padding: 0.25rem 0.5rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .btn-reset:hover {
-      background: #F1F5F9;
-      color: var(--contre);
-      border-color: var(--contre);
     }
 
-    .parties-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-      gap: 0.5rem;
-      margin-top: 0.75rem;
-    }
-
+    .parties-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 0.5rem; }
     .party-card {
       border: 1px solid var(--border);
       border-radius: 0.5rem;
@@ -204,108 +180,20 @@
       align-items: center;
       justify-content: space-between;
       background: white;
-      gap: 0.5rem;
     }
-
-    .party-info {
-      display: flex;
-      align-items: center;
-      gap: 0.45rem;
-      overflow: hidden;
-    }
-
+    .party-info { display: flex; align-items: center; gap: 0.45rem; overflow: hidden; }
     .party-avatar {
-      width: 28px;
-      height: 28px;
-      border-radius: 0.35rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: 0.7rem;
-      flex-shrink: 0;
+      width: 28px; height: 28px; border-radius: 0.35rem; display: flex;
+      align-items: center; justify-content: center; font-weight: 800; font-size: 0.7rem; flex-shrink: 0;
     }
+    .party-name-text { font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .party-name-text {
-      font-size: 0.8rem;
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .party-status {
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-      flex-shrink: 0;
-    }
-
-    .scores-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      margin-top: 0.75rem;
-    }
-
-    .score-card {
-      background: white;
-      border: 1px solid var(--border);
-      border-radius: 0.50rem;
-      padding: 0.6rem 0.75rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-    }
-
-    .score-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .score-party-info {
-      display: flex;
-      align-items: center;
-      gap: 0.45rem;
-      overflow: hidden;
-    }
-
-    .score-badge {
-      padding: 0.15rem 0.4rem;
-      border-radius: 0.3rem;
-      font-weight: 800;
-      font-size: 0.7rem;
-      flex-shrink: 0;
-    }
-
-    .score-party-name {
-      font-weight: 700;
-      font-size: 0.825rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .score-pct {
-      font-size: 0.95rem;
-      font-weight: 800;
-      flex-shrink: 0;
-    }
-
-    .progress-bar-bg {
-      height: 5px;
-      background: #E2E8F0;
-      border-radius: 999px;
-      overflow: hidden;
-    }
-
-    .progress-bar-fill {
-      height: 100%;
-      border-radius: 999px;
-      transition: width 0.4s ease;
-    }
+    .scores-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem; }
+    .score-card { background: white; border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.6rem 0.75rem; }
+    .score-header { display: flex; justify-content: space-between; align-items: center; }
+    .score-badge { padding: 0.15rem 0.4rem; border-radius: 0.3rem; font-weight: 800; font-size: 0.7rem; }
+    .progress-bar-bg { height: 5px; background: #E2E8F0; border-radius: 999px; overflow: hidden; margin-top: 0.35rem; }
+    .progress-bar-fill { height: 100%; border-radius: 999px; }
   </style>
 </head>
 <body>
@@ -317,19 +205,35 @@
   </header>
 
   <div class="app-layout">
-    <!-- Colonne Principale -->
     <main>
       <div id="game-card" class="card">
         <div class="meta-bar">
           <span id="vote-number" style="font-weight:600; color:var(--text-muted); font-size:0.85rem;">Scrutin n°...</span>
-          <span id="vote-type-badge" class="badge badge-type">17e Législature</span>
+          <span class="badge badge-type">17e Législature</span>
         </div>
 
         <h2 id="vote-title" class="vote-title">Chargement des données...</h2>
 
-        <a id="vote-url" href="#" target="_blank" class="link-official">
-          📄 Fiche officielle sur Assemblee-Nationale.fr ↗
-        </a>
+        <div class="links-row">
+          <button id="btn-ai" class="btn-ai-toggle" onclick="toggleAISummary()">✨ Décoder cette loi (Gemini IA)</button>
+          <a id="vote-url" href="#" target="_blank" class="link-official">📄 Fiche officielle ↗</a>
+        </div>
+
+        <!-- Panneau d'Explication Gemini -->
+        <div id="ai-summary-box" class="ai-box">
+          <h4>💡 Résumé neutre du projet</h4>
+          <p id="ai-context">Chargement de l'analyse...</p>
+          <div class="ai-grid">
+            <div class="ai-col">
+              <div class="ai-col-title" style="color: var(--pour);">👍 Enjeux & Opportunités</div>
+              <ul id="ai-opps"></ul>
+            </div>
+            <div class="ai-col">
+              <div class="ai-col-title" style="color: var(--contre);">👎 Risques & Critiques</div>
+              <ul id="ai-risks"></ul>
+            </div>
+          </div>
+        </div>
 
         <!-- Boutons de Vote -->
         <div id="vote-actions" class="actions-grid">
@@ -338,7 +242,7 @@
           <button class="btn-vote btn-abst" onclick="submitVote('ABSTENTION')">✋ ABSTENTION</button>
         </div>
 
-        <!-- Zone de Résultat du vote -->
+        <!-- Zone de Résultat -->
         <div id="result-zone" style="display: none; margin-top: 1.25rem;">
           <div class="result-banner">
             <div>
@@ -347,27 +251,21 @@
             </div>
             <button class="btn-next" onclick="nextVote()">Vote suivant ➔</button>
           </div>
-
           <h3 style="font-size: 0.925rem; font-weight: 700; margin: 0 0 0.5rem 0;">Position des groupes parlementaires :</h3>
           <div id="parties-breakdown" class="parties-grid"></div>
         </div>
       </div>
     </main>
 
-    <!-- Sidebar : Alignement Politique -->
     <aside class="sidebar">
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
           <h2 style="font-size: 1.1rem; margin: 0;">📊 Alignement Politique</h2>
-          <button class="btn-reset" onclick="resetScores()" title="Réinitialiser les résultats">Réinitialiser 🔄</button>
+          <button style="background:none; border:1px solid var(--border); padding:0.2rem 0.4rem; border-radius:0.3rem; font-size:0.75rem; cursor:pointer;" onclick="resetScores()">Réinitialiser 🔄</button>
         </div>
-        <p style="color: var(--text-muted); margin: 0 0 0.75rem 0; font-size: 0.825rem;">
-          Calculé selon vos votes lors de cette session.
-        </p>
+        <p style="color: var(--text-muted); margin: 0 0 0.75rem 0; font-size: 0.825rem;">Calculé selon vos votes en cours.</p>
         <div id="global-scores" class="scores-list">
-          <p style="color: var(--text-muted); font-style: italic; font-size: 0.825rem; margin: 0;">
-            Votez pour afficher votre proximité avec les partis.
-          </p>
+          <p style="color: var(--text-muted); font-style: italic; font-size: 0.825rem; margin: 0;">Votez pour afficher votre proximité avec les partis.</p>
         </div>
       </div>
     </aside>
@@ -385,10 +283,9 @@
     }
   }
 
-  function formatTitle(text) {
-    if (!text) return "";
-    let clean = text.trim();
-    return clean.charAt(0).toUpperCase() + clean.slice(1);
+  function toggleAISummary() {
+    const box = document.getElementById('ai-summary-box');
+    box.style.display = (box.style.display === 'block') ? 'none' : 'block';
   }
 
   async function init() {
@@ -398,7 +295,6 @@
       votesData = await response.json();
       
       if (Array.isArray(votesData) && votesData.length > 0) {
-        // Mélange aléatoire des questions à chaque session
         shuffleArray(votesData);
         showVote(0);
         updateGlobalScoreboardUI();
@@ -406,7 +302,7 @@
         document.getElementById('vote-title').innerText = "Aucun vote disponible actuellement.";
       }
     } catch (e) {
-      document.getElementById('vote-title').innerText = "Erreur de chargement des votes. Vérifiez les actions GitHub.";
+      document.getElementById('vote-title').innerText = "Erreur lors du chargement des scrutins.";
     }
   }
 
@@ -415,30 +311,34 @@
       document.getElementById('game-card').innerHTML = `
         <div style="text-align: center; padding: 2rem 1rem;">
           <h2>🎉 Fin de la session !</h2>
-          <p style="color: var(--text-muted);">Vous avez donné votre position sur l'ensemble des textes.</p>
-          <button class="btn-next" onclick="location.reload()">Recommencer avec un nouvel ordre</button>
+          <button class="btn-next" onclick="location.reload()">Recommencer</button>
         </div>`;
       return;
     }
 
     const current = votesData[index];
-    document.getElementById('vote-title').innerText = formatTitle(current.titre);
+    document.getElementById('vote-title').innerText = current.titre;
     
     const formattedDate = current.date ? new Date(current.date).toLocaleDateString('fr-FR') : '';
     document.getElementById('vote-number').innerText = `Scrutin n°${current.numero} ${formattedDate ? 'du ' + formattedDate : ''}`;
-    
     document.getElementById('vote-url').href = current.url || '#';
+    
+    // Remplissage du résumé IA s'il existe
+    const aiBox = document.getElementById('ai-summary-box');
+    const btnAi = document.getElementById('btn-ai');
+    aiBox.style.display = 'none';
+
+    if (current.aiSummary) {
+      btnAi.style.display = 'inline-flex';
+      document.getElementById('ai-context').innerText = current.aiSummary.contexte || "Pas de description contextuelle disponible.";
+      document.getElementById('ai-opps').innerHTML = (current.aiSummary.opportunites || []).map(o => `<li>${o}</li>`).join('');
+      document.getElementById('ai-risks').innerHTML = (current.aiSummary.risques || []).map(r => `<li>${r}</li>`).join('');
+    } else {
+      btnAi.style.display = 'none';
+    }
+
     document.getElementById('vote-actions').style.display = 'grid';
     document.getElementById('result-zone').style.display = 'none';
-  }
-
-  function isValidGroup(grp) {
-    return grp && 
-           grp.name && 
-           grp.shortName && 
-           grp.name !== "undefined" && 
-           grp.shortName !== "undefined" &&
-           !grp.name.includes("Groupe undefined");
   }
 
   function submitVote(userChoice) {
@@ -447,12 +347,7 @@
     let totalVotes = parseInt(localStorage.getItem('total_votes') || '0') + 1;
 
     let breakdownHtml = "";
-    const rawGroups = current.groups || [];
-    
-    // Filtrage strict des groupes valides
-    const groups = rawGroups.filter(isValidGroup);
-
-    groups.forEach(grp => {
+    (current.groups || []).forEach(grp => {
       const matched = (userChoice === grp.globalVote);
       const choiceBadgeClass = grp.globalVote === "POUR" ? "badge-pour" : (grp.globalVote === "CONTRE" ? "badge-contre" : "badge-abst");
 
@@ -462,24 +357,15 @@
             <div class="party-avatar" style="background-color: ${grp.bg}; color: ${grp.text};">${grp.shortName}</div>
             <div class="party-name-text" title="${grp.name}">${grp.name}</div>
           </div>
-          <div class="party-status">
+          <div>
             <span class="badge ${choiceBadgeClass}">${grp.globalVote}</span>
             <span style="font-size:0.9rem;">${matched ? '✅' : '❌'}</span>
           </div>
         </div>
       `;
 
-      if (!scores[grp.id]) {
-        scores[grp.id] = { name: grp.name, shortName: grp.shortName, bg: grp.bg, text: grp.text, score: 0 };
-      }
-      scores[grp.id].name = grp.name;
-      scores[grp.id].shortName = grp.shortName;
-      scores[grp.id].bg = grp.bg;
-      scores[grp.id].text = grp.text;
-
-      if (matched) {
-        scores[grp.id].score += 1;
-      }
+      if (!scores[grp.id]) scores[grp.id] = { name: grp.name, shortName: grp.shortName, bg: grp.bg, text: grp.text, score: 0 };
+      if (matched) scores[grp.id].score += 1;
     });
 
     localStorage.setItem('political_scores', JSON.stringify(scores));
@@ -491,7 +377,6 @@
     const userBadge = document.getElementById('user-vote-badge');
     userBadge.innerText = userChoice;
     userBadge.className = `badge badge-${userChoice.toLowerCase().substring(0,4)}`;
-
     document.getElementById('parties-breakdown').innerHTML = breakdownHtml;
 
     updateGlobalScoreboardUI();
@@ -503,13 +388,10 @@
   }
 
   function resetScores() {
-    if (confirm("Voulez-vous vraiment réinitialiser votre alignement politique ?")) {
+    if (confirm("Réinitialiser l'alignement politique ?")) {
       localStorage.removeItem('political_scores');
       localStorage.removeItem('total_votes');
-      document.getElementById('global-scores').innerHTML = `
-        <p style="color: var(--text-muted); font-style: italic; font-size: 0.825rem; margin: 0;">
-          Votez pour afficher votre proximité avec les partis.
-        </p>`;
+      updateGlobalScoreboardUI();
     }
   }
 
@@ -518,19 +400,12 @@
     const totalVotes = parseInt(localStorage.getItem('total_votes') || '0');
 
     if (totalVotes === 0 || Object.keys(scores).length === 0) {
-      document.getElementById('global-scores').innerHTML = `
-        <p style="color: var(--text-muted); font-style: italic; font-size: 0.825rem; margin: 0;">
-          Votez pour afficher votre proximité avec les partis.
-        </p>`;
+      document.getElementById('global-scores').innerHTML = `<p style="color: var(--text-muted); font-style: italic; font-size: 0.825rem; margin: 0;">Votez pour afficher votre proximité avec les partis.</p>`;
       return;
     }
 
     const sorted = Object.values(scores)
-      .filter(isValidGroup)
-      .map(grp => ({
-        ...grp,
-        pct: Math.round(((grp.score || 0) / totalVotes) * 100)
-      }))
+      .map(grp => ({ ...grp, pct: Math.round(((grp.score || 0) / totalVotes) * 100) }))
       .sort((a, b) => b.pct - a.pct);
 
     let html = "";
@@ -538,11 +413,8 @@
       html += `
         <div class="score-card">
           <div class="score-header">
-            <div class="score-party-info">
-              <span class="score-badge" style="background-color: ${grp.bg}; color: ${grp.text};">${grp.shortName}</span>
-              <span class="score-party-name" title="${grp.name}">${grp.name}</span>
-            </div>
-            <span class="score-pct" style="color: ${grp.bg};">${grp.pct}%</span>
+            <span class="score-badge" style="background-color: ${grp.bg}; color: ${grp.text};">${grp.shortName}</span>
+            <span style="font-weight: 800; font-size: 0.95rem; color: ${grp.bg};">${grp.pct}%</span>
           </div>
           <div class="progress-bar-bg">
             <div class="progress-bar-fill" style="width: ${grp.pct}%; background-color: ${grp.bg};"></div>
@@ -550,7 +422,6 @@
         </div>
       `;
     }
-
     document.getElementById('global-scores').innerHTML = html;
   }
 
