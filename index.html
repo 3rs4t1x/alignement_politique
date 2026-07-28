@@ -11,7 +11,6 @@
       --text-main: #0F172A;
       --text-muted: #64748B;
       --primary: #2563EB;
-      --primary-hover: #1D4ED8;
       --gemini-purple: #7C3AED;
       --gemini-bg: #F5F3FF;
       --pour: #16A34A;
@@ -99,10 +98,10 @@
       background-color: var(--gemini-bg);
       color: var(--gemini-purple);
       border: 1px solid #DDD6FE;
-      padding: 0.35rem 0.75rem;
+      padding: 0.4rem 0.8rem;
       border-radius: 0.5rem;
       font-weight: 700;
-      font-size: 0.825rem;
+      font-size: 0.85rem;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
@@ -111,7 +110,7 @@
     }
     .btn-ai-toggle:hover { background-color: #EDE9FE; }
 
-    /* Box de Résumé IA */
+    /* Volet Résumé IA */
     .ai-box {
       background: var(--gemini-bg);
       border: 1px solid #DDD6FE;
@@ -194,6 +193,13 @@
     .score-badge { padding: 0.15rem 0.4rem; border-radius: 0.3rem; font-weight: 800; font-size: 0.7rem; }
     .progress-bar-bg { height: 5px; background: #E2E8F0; border-radius: 999px; overflow: hidden; margin-top: 0.35rem; }
     .progress-bar-fill { height: 100%; border-radius: 999px; }
+
+    .spinner {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid rgba(124, 58, 237, 0.3); border-radius: 50%;
+      border-top-color: var(--gemini-purple); animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -221,16 +227,21 @@
 
         <!-- Panneau d'Explication Gemini -->
         <div id="ai-summary-box" class="ai-box">
-          <h4>💡 Résumé neutre du projet</h4>
-          <p id="ai-context">Chargement de l'analyse...</p>
-          <div class="ai-grid">
-            <div class="ai-col">
-              <div class="ai-col-title" style="color: var(--pour);">👍 Enjeux & Opportunités</div>
-              <ul id="ai-opps"></ul>
-            </div>
-            <div class="ai-col">
-              <div class="ai-col-title" style="color: var(--contre);">👎 Risques & Critiques</div>
-              <ul id="ai-risks"></ul>
+          <div id="ai-loading" style="display: none; align-items: center; gap: 0.5rem; color: var(--gemini-purple); font-weight: 600;">
+            <div class="spinner"></div> Analyse et décryptage neutre du texte par Gemini en cours...
+          </div>
+          <div id="ai-content" style="display: none;">
+            <h4>💡 Résumé neutre du projet</h4>
+            <p id="ai-context"></p>
+            <div class="ai-grid">
+              <div class="ai-col">
+                <div class="ai-col-title" style="color: var(--pour);">👍 Enjeux & Opportunités</div>
+                <ul id="ai-opps"></ul>
+              </div>
+              <div class="ai-col">
+                <div class="ai-col-title" style="color: var(--contre);">👎 Risques & Critiques</div>
+                <ul id="ai-risks"></ul>
+              </div>
             </div>
           </div>
         </div>
@@ -267,6 +278,9 @@
         <div id="global-scores" class="scores-list">
           <p style="color: var(--text-muted); font-style: italic; font-size: 0.825rem; margin: 0;">Votez pour afficher votre proximité avec les partis.</p>
         </div>
+        <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.75rem;">
+          <button onclick="configureApiKey()" style="background:none; border:none; color:var(--text-muted); font-size:0.75rem; cursor:pointer; text-decoration:underline; padding:0;">🔑 Clé API Gemini (Optionnel)</button>
+        </div>
       </div>
     </aside>
   </div>
@@ -275,6 +289,8 @@
 <script>
   let votesData = [];
   let currentIndex = 0;
+  // Cache en mémoire pour stocker les résumés générés pendant la session
+  const aiCache = {};
 
   function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -283,9 +299,112 @@
     }
   }
 
-  function toggleAISummary() {
+  function getApiKey() {
+    let key = localStorage.getItem('gemini_api_key');
+    if (!key) {
+      key = prompt("Pour utiliser l'IA en direct, veuillez entrer votre clé API Gemini (gratuite sur https://aistudio.google.com) :");
+      if (key && key.trim() !== "") {
+        localStorage.setItem('gemini_api_key', key.trim());
+      }
+    }
+    return key;
+  }
+
+  function configureApiKey() {
+    const currentKey = localStorage.getItem('gemini_api_key') || "";
+    const newKey = prompt("Clé API Gemini actuelle :", currentKey);
+    if (newKey !== null) {
+      if (newKey.trim() === "") localStorage.removeItem('gemini_api_key');
+      else localStorage.setItem('gemini_api_key', newKey.trim());
+      alert("Clé API mise à jour !");
+    }
+  }
+
+  async function toggleAISummary() {
     const box = document.getElementById('ai-summary-box');
-    box.style.display = (box.style.display === 'block') ? 'none' : 'block';
+    const isHidden = box.style.display === 'none' || box.style.display === '';
+
+    if (!isHidden) {
+      box.style.display = 'none';
+      return;
+    }
+
+    box.style.display = 'block';
+    const current = votesData[currentIndex];
+    const voteId = current.numero;
+
+    // Si on l'a déjà généré pendant la session
+    if (aiCache[voteId]) {
+      renderAISummary(aiCache[voteId]);
+      return;
+    }
+
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      box.style.display = 'none';
+      return;
+    }
+
+    // Afficher le loader
+    document.getElementById('ai-loading').style.display = 'flex';
+    document.getElementById('ai-content').style.display = 'none';
+
+    try {
+      const summary = await callGeminiAPI(current, apiKey);
+      aiCache[voteId] = summary;
+      renderAISummary(summary);
+    } catch (err) {
+      document.getElementById('ai-loading').style.display = 'none';
+      alert("Erreur lors de l'appel à Gemini : " + err.message);
+      box.style.display = 'none';
+    }
+  }
+
+  async function callGeminiAPI(vote, apiKey) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+    const promptText = `
+Tu es un assistant parlementaire rigoureusement neutre, pédagogique et impartial.
+Analyse l'intitulé et le contexte de ce scrutin de l'Assemblée nationale française :
+Titre du vote : "${vote.titre}"
+Scrutin N° : ${vote.numero}
+Date : ${vote.date}
+Lien officiel : ${vote.url}
+
+Explique le projet au grand public de façon synthétique sous la forme exacte de cet objet JSON :
+{
+  "contexte": "2 à 3 phrases simples et claires expliquant le but du texte et le problème qu'il traite.",
+  "opportunites": ["Point positif / opportunité 1", "Point positif / opportunité 2"],
+  "risques": ["Point d'attention / risque / critique 1", "Point d'attention / risque / critique 2"]
+}
+`;
+
+    const payload = {
+      contents: [{ parts: [{ text: promptText }] }],
+      generationConfig: { response_mime_type: "application/json" }
+    };
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      throw new Error(`Erreur API (${res.status}) - Vérifiez votre clé API.`);
+    }
+
+    const data = await res.json();
+    const rawText = data.candidates[0].content.parts[0].text;
+    return JSON.parse(rawText);
+  }
+
+  function renderAISummary(summary) {
+    document.getElementById('ai-loading').style.display = 'none';
+    document.getElementById('ai-context').innerText = summary.contexte || "Pas de contexte disponible.";
+    document.getElementById('ai-opps').innerHTML = (summary.opportunites || []).map(o => `<li>${o}</li>`).join('');
+    document.getElementById('ai-risks').innerHTML = (summary.risques || []).map(r => `<li>${r}</li>`).join('');
+    document.getElementById('ai-content').style.display = 'block';
   }
 
   async function init() {
@@ -323,19 +442,8 @@
     document.getElementById('vote-number').innerText = `Scrutin n°${current.numero} ${formattedDate ? 'du ' + formattedDate : ''}`;
     document.getElementById('vote-url').href = current.url || '#';
     
-    // Remplissage du résumé IA s'il existe
-    const aiBox = document.getElementById('ai-summary-box');
-    const btnAi = document.getElementById('btn-ai');
-    aiBox.style.display = 'none';
-
-    if (current.aiSummary) {
-      btnAi.style.display = 'inline-flex';
-      document.getElementById('ai-context').innerText = current.aiSummary.contexte || "Pas de description contextuelle disponible.";
-      document.getElementById('ai-opps').innerHTML = (current.aiSummary.opportunites || []).map(o => `<li>${o}</li>`).join('');
-      document.getElementById('ai-risks').innerHTML = (current.aiSummary.risques || []).map(r => `<li>${r}</li>`).join('');
-    } else {
-      btnAi.style.display = 'none';
-    }
+    // Réinitialisation du volet IA
+    document.getElementById('ai-summary-box').style.display = 'none';
 
     document.getElementById('vote-actions').style.display = 'grid';
     document.getElementById('result-zone').style.display = 'none';

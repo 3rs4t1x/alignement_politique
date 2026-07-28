@@ -7,9 +7,7 @@ import zipfile
 
 SCRUTINS_ZIP_URL = "https://data.assemblee-nationale.fr/static/openData/repository/17/loi/scrutins/Scrutins.json.zip"
 ORGANES_ZIP_URL = "https://data.assemblee-nationale.fr/static/openData/repository/17/amo/deputes_actifs_mandats_actifs_organes/AMO10_deputes_actifs_mandats_actifs_organes.json.zip"
-
 DISSOLUTION_DATE = "2024-06-09"
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 COLOR_PALETTE = {
     "LFI-NFP": {"bg": "#cc0000", "text": "#ffffff"},
@@ -34,49 +32,8 @@ def get_ssl_context():
     ctx.verify_mode = ssl.CERT_NONE
     return ctx
 
-def generate_ai_summary(titre):
-    """Interroge Gemini pour générer une synthèse neutre et structurée du texte."""
-    if not GEMINI_API_KEY:
-        return None
-
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
-    
-    prompt = f"""
-Tu es un assistant parlementaire rigoureusement neutre et pédagogique.
-Analyse cet intitulé de scrutin de l'Assemblée nationale française :
-"{titre}"
-
-Fournis une explication impartiale et accessible au grand public sous forme d'un objet JSON strict respectant cette structure exacte :
-{{
-  "contexte": "2 à 3 phrases simples expliquant l'objectif concret du texte et le problème qu'il cherche à résoudre.",
-  "opportunites": ["Argument principal ou bénéfice attendu 1", "Argument principal ou bénéfice attendu 2"],
-  "risques": ["Critique principale ou risque identifié 1", "Critique principale ou risque identifié 2"]
-}}
-"""
-
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "response_mime_type": "application/json"
-        }
-    }
-
-    try:
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"}
-        )
-        with urllib.request.urlopen(req, context=get_ssl_context(), timeout=15) as resp:
-            res_data = json.loads(resp.read().decode("utf-8"))
-            text_response = res_data["candidates"][0]["content"]["parts"][0]["text"]
-            return json.loads(text_response)
-    except Exception as e:
-        print(f"⚠️ Erreur génération Gemini pour '{titre[:30]}...': {e}")
-        return None
-
 def fetch_official_organs():
-    print("Récupération des groupes parlementaires officiels...")
+    print("Récupération des groupes parlementaires...")
     organs_map = {}
     req = urllib.request.Request(ORGANES_ZIP_URL, headers={"User-Agent": "Mozilla/5.0"})
 
@@ -107,22 +64,11 @@ def fetch_official_organs():
                         except Exception:
                             continue
     except Exception as e:
-        print(f"⚠️ Impossible de charger le référentiel des organes ({e}).")
+        print(f"⚠️ Erreur chargement des organes : {e}")
 
     return organs_map
 
-def extract_raw_groups(scrutin):
-    if not isinstance(scrutin, dict): return []
-    ventilation = scrutin.get("ventilationVotes")
-    if not isinstance(ventilation, dict): return []
-    organe_root = ventilation.get("organe")
-    if not isinstance(organe_root, dict): return []
-    groupes_container = organe_root.get("groupes")
-    if not isinstance(groupes_container, dict): return []
-    groupes = groupes_container.get("groupe", [])
-    return [groupes] if isinstance(groupes, dict) else (groupes if isinstance(groupes, list) else [])
-
-def process_single_scrutin(data_obj, organs_map, existing_cache):
+def process_single_scrutin(data_obj, organs_map):
     scrutin = data_obj.get("scrutin") if isinstance(data_obj, dict) and "scrutin" in data_obj else data_obj
     if not isinstance(scrutin, dict): return None
 
@@ -131,8 +77,11 @@ def process_single_scrutin(data_obj, organs_map, existing_cache):
     if not (legislature == "17" or (date_scrutin and date_scrutin >= DISSOLUTION_DATE)):
         return None
 
-    raw_groups = extract_raw_groups(scrutin)
-    if not raw_groups: return None
+    ventilation = scrutin.get("ventilationVotes") or {}
+    organe_root = ventilation.get("organe") or {}
+    groupes_container = organe_root.get("groupes") or {}
+    raw_groups = groupes_container.get("groupe", [])
+    if isinstance(raw_groups, dict): raw_groups = [raw_groups]
 
     groups_detail = []
     for grp in raw_groups:
@@ -141,8 +90,8 @@ def process_single_scrutin(data_obj, organs_map, existing_cache):
         if group_id not in organs_map: continue
         meta = organs_map[group_id]
 
-        vote_obj = grp.get("vote") if isinstance(grp.get("vote"), dict) else {}
-        decompte = vote_obj.get("decompteVoix") if isinstance(vote_obj.get("decompteVoix"), dict) else {}
+        vote_obj = grp.get("vote") or {}
+        decompte = vote_obj.get("decompteVoix") or {}
 
         pour = int(decompte.get("pour") or 0)
         contre = int(decompte.get("contre") or 0)
@@ -170,35 +119,16 @@ def process_single_scrutin(data_obj, organs_map, existing_cache):
     num_scrutin = str(scrutin.get("numero", "0"))
     titre = scrutin.get("titre") or scrutin.get("objet") or "Scrutin sans titre"
 
-    # Récupération de l'explication IA (depuis le cache ou génération)
-    ai_summary = existing_cache.get(num_scrutin, {}).get("aiSummary")
-    if not ai_summary and GEMINI_API_KEY:
-        print(f"🤖 Génération de la synthèse Gemini pour le scrutin n°{num_scrutin}...")
-        ai_summary = generate_ai_summary(titre)
-
     return {
         "numero": num_scrutin,
         "titre": titre,
         "date": date_scrutin,
         "url": f"https://www.assemblee-nationale.fr/dyn/17/scrutins/{num_scrutin}",
-        "aiSummary": ai_summary,
         "groups": groups_detail
     }
 
 def main():
     os.makedirs("data", exist_ok=True)
-    output_file = "data/votes.json"
-    
-    # Chargement du cache existant pour économiser les appels API Gemini
-    existing_cache = {}
-    if os.path.exists(output_file):
-        try:
-            with open(output_file, "r", encoding="utf-8") as f:
-                old_data = json.load(f)
-                existing_cache = {v["numero"]: v for v in old_data if "numero" in v}
-        except Exception:
-            pass
-
     organs_map = fetch_official_organs()
     processed_votes = []
 
@@ -215,9 +145,8 @@ def main():
                     with z.open(name) as f:
                         try:
                             data = json.load(f)
-                            res = process_single_scrutin(data, organs_map, existing_cache)
-                            if res and res.get("groups"):
-                                processed_votes.append(res)
+                            res = process_single_scrutin(data, organs_map)
+                            if res: processed_votes.append(res)
                         except Exception:
                             continue
 
@@ -226,13 +155,14 @@ def main():
             reverse=True
         )
 
+        output_file = "data/votes.json"
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(processed_votes, f, ensure_ascii=False, indent=2)
 
         print(f"✅ Succès : {len(processed_votes)} scrutins enregistrés dans {output_file}")
 
     except Exception as e:
-        print(f"❌ Erreur critique : {e}")
+        print(f"❌ Erreur : {e}")
 
 if __name__ == "__main__":
     main()
