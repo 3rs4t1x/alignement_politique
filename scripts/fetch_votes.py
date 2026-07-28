@@ -14,14 +14,33 @@ DISSOLUTION_DATE = "2024-06-09"
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 # --- Réglages Gemini ---------------------------------------------------
-# NB : si Google déprécie ce modèle, la liste à jour est ici :
-# https://ai.google.dev/gemini-api/docs/deprecations
-GEMINI_MODEL = "gemini-2.5-flash"
-GEMINI_MAX_RETRIES = 3          # tentatives en cas de dépassement de quota (HTTP 429)
+# gemini-2.5-flash a commencé à renvoyer des 404 "no longer available" dès le
+# 9 juillet 2026 sur certains comptes, alors que sa fin de vie officielle
+# était annoncée pour le 16 octobre 2026 (dépréciation anticipée non
+# annoncée, cf. forum développeurs Google). Plutôt que de coder en dur un
+# seul nom de modèle qui peut disparaître du jour au lendemain, on essaie
+# une liste de modèles par ordre de préférence et on bascule automatiquement
+# sur le suivant en cas de 404 "modèle introuvable".
+#
+# GEMINI_MODEL (variable d'environnement optionnelle) permet de forcer un
+# modèle précis en tête de liste sans toucher au code, si besoin.
+# Liste des modèles disponibles : https://ai.google.dev/gemini-api/docs/models
+# Dépréciations en cours : https://ai.google.dev/gemini-api/docs/deprecations
+GEMINI_MODEL_CANDIDATES = [m for m in [
+    os.environ.get("GEMINI_MODEL", "").strip(),
+    "gemini-3.5-flash",
+    "gemini-2.5-flash",
+] if m]
+
+GEMINI_MAX_RETRIES = 3          # tentatives (par modèle) en cas de dépassement de quota (HTTP 429)
 GEMINI_RETRY_DELAY = 20         # secondes d'attente avant de retenter après un 429
 GEMINI_CALL_DELAY = 4.5         # secondes entre deux appels réussis, pour rester sous le quota gratuit (~10-15 req/min)
 MAX_NEW_SUMMARIES_PER_RUN = 200 # évite d'épuiser le quota gratuit journalier (~500 req/jour) en un seul run
 # -------------------------------------------------------------------------
+
+# Mémorise le dernier modèle qui a fonctionné, pour ne pas re-tester toute
+# la liste à chaque scrutin (mis à jour dynamiquement par generate_ai_summary).
+_working_gemini_model = None
 
 COLOR_PALETTE = {
     "LFI-NFP": {"bg": "#cc0000", "text": "#ffffff"},
@@ -56,13 +75,14 @@ def get_insecure_ssl_context():
 def generate_ai_summary(titre):
     """Interroge Gemini pour générer une synthèse neutre et structurée du texte.
 
-    Retourne None en cas d'échec définitif (clé invalide, texte non parsable, etc.)
-    et réessaie automatiquement en cas de dépassement de quota (HTTP 429).
+    Essaie successivement les modèles de GEMINI_MODEL_CANDIDATES : si l'un
+    d'eux renvoie 404 (modèle retiré/inconnu), on passe au suivant sans
+    attendre. Retourne None en cas d'échec définitif sur tous les modèles.
     """
+    global _working_gemini_model
+
     if not GEMINI_API_KEY:
         return None
-
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 
     prompt = f"""
 Tu es un assistant parlementaire rigoureusement neutre et pédagogique.
@@ -86,47 +106,63 @@ Fournis une explication impartiale et accessible au grand public sous forme d'un
         }
     }
 
-    for attempt in range(1, GEMINI_MAX_RETRIES + 1):
-        try:
-            req = urllib.request.Request(
-                url,
-                data=json.dumps(payload).encode("utf-8"),
-                headers={
-                    "Content-Type": "application/json",
-                    # Méthode recommandée par Google (ai.google.dev/gemini-api/docs/api-key) :
-                    # l'en-tête x-goog-api-key est préféré à l'ancien paramètre d'URL "?key=...",
-                    # qui expose la clé dans les logs serveur et les outils intermédiaires.
-                    "x-goog-api-key": GEMINI_API_KEY,
-                }
-            )
-            # Contexte SSL par défaut (vérifié) : on n'utilise JAMAIS le contexte
-            # non sécurisé ici, puisque la requête transporte la clé API.
-            with urllib.request.urlopen(req, context=ssl.create_default_context(), timeout=20) as resp:
-                res_data = json.loads(resp.read().decode("utf-8"))
-                text_response = res_data["candidates"][0]["content"]["parts"][0]["text"]
-                return json.loads(text_response)
+    # Le modèle qui a fonctionné la dernière fois passe en tête de liste ;
+    # les autres candidats restent disponibles en repli.
+    models_to_try = list(GEMINI_MODEL_CANDIDATES)
+    if _working_gemini_model and _working_gemini_model in models_to_try:
+        models_to_try.remove(_working_gemini_model)
+        models_to_try.insert(0, _working_gemini_model)
 
-        except urllib.error.HTTPError as e:
-            if e.code == 429:
-                print(f"⏳ Quota Gemini atteint pour '{titre[:30]}...' (tentative {attempt}/{GEMINI_MAX_RETRIES}), nouvel essai dans {GEMINI_RETRY_DELAY}s")
-                time.sleep(GEMINI_RETRY_DELAY)
-                continue
-            elif e.code in (401, 403):
-                # Depuis le 19 juin 2026, Google refuse les clés Gemini qui n'ont pas
-                # de restriction d'API configurée. Si cette erreur apparaît alors que
-                # la clé fonctionnait auparavant, il faut la restreindre à
-                # "Generative Language API" dans Google Cloud Console > Identifiants,
-                # ou en générer une nouvelle depuis Google AI Studio.
-                print(f"❌ Clé API Gemini refusée (HTTP {e.code}) pour '{titre[:30]}...' : {e}")
-                return None
-            else:
-                print(f"⚠️ Erreur HTTP Gemini ({e.code}) pour '{titre[:30]}...': {e}")
-                return None
-        except Exception as e:
-            print(f"⚠️ Erreur génération Gemini pour '{titre[:30]}...': {e}")
-            return None
+    for model in models_to_try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
-    print(f"❌ Abandon pour '{titre[:30]}...' après {GEMINI_MAX_RETRIES} tentatives (quota toujours dépassé).")
+        for attempt in range(1, GEMINI_MAX_RETRIES + 1):
+            try:
+                req = urllib.request.Request(
+                    url,
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={
+                        "Content-Type": "application/json",
+                        # Méthode recommandée par Google (ai.google.dev/gemini-api/docs/api-key) :
+                        # l'en-tête x-goog-api-key est préféré à l'ancien paramètre d'URL "?key=...",
+                        # qui expose la clé dans les logs serveur et les outils intermédiaires.
+                        "x-goog-api-key": GEMINI_API_KEY,
+                    }
+                )
+                # Contexte SSL par défaut (vérifié) : on n'utilise JAMAIS le contexte
+                # non sécurisé ici, puisque la requête transporte la clé API.
+                with urllib.request.urlopen(req, context=ssl.create_default_context(), timeout=20) as resp:
+                    res_data = json.loads(resp.read().decode("utf-8"))
+                    text_response = res_data["candidates"][0]["content"]["parts"][0]["text"]
+                    _working_gemini_model = model
+                    return json.loads(text_response)
+
+            except urllib.error.HTTPError as e:
+                if e.code == 404:
+                    # Modèle retiré ou nom incorrect : inutile de retenter, on passe
+                    # directement au candidat suivant.
+                    print(f"⚠️ Modèle '{model}' introuvable (404) — probablement déprécié par Google. Passage au modèle suivant.")
+                    break
+                elif e.code == 429:
+                    print(f"⏳ Quota Gemini atteint pour '{titre[:30]}...' avec '{model}' (tentative {attempt}/{GEMINI_MAX_RETRIES}), nouvel essai dans {GEMINI_RETRY_DELAY}s")
+                    time.sleep(GEMINI_RETRY_DELAY)
+                    continue
+                elif e.code in (401, 403):
+                    # Depuis le 19 juin 2026, Google refuse les clés Gemini qui n'ont pas
+                    # de restriction d'API configurée. Si cette erreur apparaît alors que
+                    # la clé fonctionnait auparavant, il faut la restreindre à
+                    # "Generative Language API" dans Google Cloud Console > Identifiants,
+                    # ou en générer une nouvelle depuis Google AI Studio.
+                    print(f"❌ Clé API Gemini refusée (HTTP {e.code}) pour '{titre[:30]}...' : {e}")
+                    return None
+                else:
+                    print(f"⚠️ Erreur HTTP Gemini ({e.code}) sur '{model}' pour '{titre[:30]}...': {e}")
+                    break
+            except Exception as e:
+                print(f"⚠️ Erreur génération Gemini pour '{titre[:30]}...': {e}")
+                return None
+
+    print(f"❌ Échec pour '{titre[:30]}...' : aucun des modèles testés n'a fonctionné ({', '.join(models_to_try)}).")
     return None
 
 def test_gemini_connection():
@@ -148,15 +184,17 @@ def test_gemini_connection():
         return False
 
     print(f"🔑 Clé Gemini détectée ({len(GEMINI_API_KEY)} caractères). Test de connexion à l'API...")
+    print(f"   Modèles testés par ordre de préférence : {', '.join(GEMINI_MODEL_CANDIDATES)}")
     result = generate_ai_summary("Test de connexion à l'API Gemini")
     if result:
-        print("✅ Connexion Gemini opérationnelle — la génération de résumés est activée pour ce run.")
+        print(f"✅ Connexion Gemini opérationnelle via le modèle '{_working_gemini_model}' — la génération de résumés est activée pour ce run.")
         print("=" * 60)
         return True
 
-    print("❌ Le test de connexion Gemini a ÉCHOUÉ (voir le message d'erreur juste au-dessus).")
-    print("    Causes les plus fréquentes : clé invalide/expirée, clé sans restriction d'API")
-    print("    refusée par Google depuis le 19/06/2026, ou quota déjà épuisé.")
+    print("❌ Le test de connexion Gemini a ÉCHOUÉ (voir le/les message(s) d'erreur juste au-dessus).")
+    print("    Causes les plus fréquentes : tous les modèles candidats sont indisponibles (404),")
+    print("    clé invalide/expirée, clé sans restriction d'API refusée par Google depuis le")
+    print("    19/06/2026, ou quota déjà épuisé.")
     print("    Aucun résumé ne sera généré pour ce run.")
     print("=" * 60)
     return False
