@@ -22,24 +22,32 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 # une liste de modèles par ordre de préférence et on bascule automatiquement
 # sur le suivant en cas de 404 "modèle introuvable".
 #
+# gemini-2.5-flash est mis en premier : son quota gratuit est plus large
+# (~10-15 req/min) que celui de gemini-3.5-flash, qui semble beaucoup plus
+# restreint (voire réservé aux comptes avec facturation activée) et déclenche
+# des 429 en rafale sur un compte gratuit. gemini-3.5-flash reste en repli
+# en cas de nouvelle dépréciation surprise de la série 2.5.
+#
 # GEMINI_MODEL (variable d'environnement optionnelle) permet de forcer un
 # modèle précis en tête de liste sans toucher au code, si besoin.
 # Liste des modèles disponibles : https://ai.google.dev/gemini-api/docs/models
 # Dépréciations en cours : https://ai.google.dev/gemini-api/docs/deprecations
 GEMINI_MODEL_CANDIDATES = [m for m in [
     os.environ.get("GEMINI_MODEL", "").strip(),
-    "gemini-3.5-flash",
     "gemini-2.5-flash",
+    "gemini-3.5-flash",
 ] if m]
 
 GEMINI_MAX_RETRIES = 3          # tentatives (par modèle) en cas de dépassement de quota (HTTP 429)
 GEMINI_RETRY_DELAY = 20         # secondes d'attente avant de retenter après un 429
 GEMINI_CALL_DELAY = 4.5         # secondes entre deux appels réussis, pour rester sous le quota gratuit (~10-15 req/min)
 MAX_NEW_SUMMARIES_PER_RUN = 200 # évite d'épuiser le quota gratuit journalier (~500 req/jour) en un seul run
+GEMINI_MAX_OUTPUT_TOKENS = 4096 # généreux car le "thinking" des modèles 2.5+/3.x consomme aussi ce budget
 # -------------------------------------------------------------------------
 
-# Mémorise le dernier modèle qui a fonctionné, pour ne pas re-tester toute
-# la liste à chaque scrutin (mis à jour dynamiquement par generate_ai_summary).
+# Mémorise le dernier modèle qui a effectivement produit une réponse JSON
+# valide, pour ne pas re-tester toute la liste à chaque scrutin (mis à jour
+# uniquement après un succès CONFIRMÉ par generate_ai_summary — voir plus bas).
 _working_gemini_model = None
 
 COLOR_PALETTE = {
@@ -58,6 +66,29 @@ COLOR_PALETTE = {
     "DEM": {"bg": "#e67e22", "text": "#ffffff"},
     "NI": {"bg": "#718093", "text": "#ffffff"}
 }
+
+def build_generation_config(model):
+    """Construit la generationConfig adaptée à la génération du modèle.
+
+    Les modèles Gemini 2.5+ font du raisonnement interne ("thinking") par
+    défaut, et ces tokens de réflexion sont comptés dans maxOutputTokens.
+    Sans réglage explicite, la réflexion invisible peut consommer tout le
+    budget avant même que la réponse JSON ne commence à s'écrire — d'où des
+    réponses tronquées ("Unterminated string" côté json.loads). On désactive
+    donc ce raisonnement quand c'est possible, et on le réduit au minimum
+    sinon (la série 3.x ne permet pas de le couper entièrement pour les
+    modèles Flash — voir ai.google.dev/gemini-api/docs/generate-content/thinking).
+    """
+    config = {
+        "response_mime_type": "application/json",
+        "temperature": 0.3,
+        "maxOutputTokens": GEMINI_MAX_OUTPUT_TOKENS,
+    }
+    if model.startswith("gemini-2.5") or model.startswith("gemini-2.0"):
+        config["thinkingConfig"] = {"thinkingBudget": 0}  # désactivable entièrement sur la série 2.x
+    elif model.startswith("gemini-3"):
+        config["thinkingConfig"] = {"thinkingLevel": "low"}  # pas de "off" total sur la série 3.x
+    return config
 
 def get_insecure_ssl_context():
     """Contexte SSL sans vérification de certificat.
@@ -97,15 +128,6 @@ Fournis une explication impartiale et accessible au grand public sous forme d'un
 }}
 """
 
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "response_mime_type": "application/json",
-            "temperature": 0.3,
-            "maxOutputTokens": 1024
-        }
-    }
-
     # Le modèle qui a fonctionné la dernière fois passe en tête de liste ;
     # les autres candidats restent disponibles en repli.
     models_to_try = list(GEMINI_MODEL_CANDIDATES)
@@ -115,6 +137,10 @@ Fournis une explication impartiale et accessible au grand public sous forme d'un
 
     for model in models_to_try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": build_generation_config(model)
+        }
 
         for attempt in range(1, GEMINI_MAX_RETRIES + 1):
             try:
@@ -134,8 +160,13 @@ Fournis une explication impartiale et accessible au grand public sous forme d'un
                 with urllib.request.urlopen(req, context=ssl.create_default_context(), timeout=20) as resp:
                     res_data = json.loads(resp.read().decode("utf-8"))
                     text_response = res_data["candidates"][0]["content"]["parts"][0]["text"]
+                    parsed = json.loads(text_response)  # peut lever json.JSONDecodeError si tronqué
+                    # On ne mémorise CE modèle comme "fonctionnel" qu'une fois la
+                    # réponse entièrement validée — pas juste après un HTTP 200,
+                    # sinon un modèle qui répond mais tronque systématiquement sa
+                    # sortie restait à tort prioritaire pour tous les appels suivants.
                     _working_gemini_model = model
-                    return json.loads(text_response)
+                    return parsed
 
             except urllib.error.HTTPError as e:
                 if e.code == 404:
@@ -158,6 +189,12 @@ Fournis une explication impartiale et accessible au grand public sous forme d'un
                 else:
                     print(f"⚠️ Erreur HTTP Gemini ({e.code}) sur '{model}' pour '{titre[:30]}...': {e}")
                     break
+            except json.JSONDecodeError as e:
+                # Réponse tronquée ou malformée (typiquement : tokens de "thinking"
+                # ayant épuisé maxOutputTokens avant même le début du JSON utile).
+                # On passe au modèle suivant plutôt que d'abandonner complètement.
+                print(f"⚠️ Réponse JSON invalide/tronquée de '{model}' pour '{titre[:30]}...' : {e}. Passage au modèle suivant.")
+                break
             except Exception as e:
                 print(f"⚠️ Erreur génération Gemini pour '{titre[:30]}...': {e}")
                 return None
